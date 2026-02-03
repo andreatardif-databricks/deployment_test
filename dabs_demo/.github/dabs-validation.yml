@@ -14,7 +14,7 @@ on:
 jobs:
   validate_bundle:
     runs-on:
-      group: databricks-field-eng-protected-runner-group
+      # group: databricks-field-eng-protected-runner-group
       labels: ubuntu-latest
 
     steps:
