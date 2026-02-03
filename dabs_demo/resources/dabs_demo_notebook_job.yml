@@ -16,7 +16,7 @@ resources:
       # permissions:
       #   - group_name: dabs-example-group
       #     level: CAN_MANAGE
-      # test comment
+      # test comment 2
 
       environments:
         - environment_key: serverless_demo_env
