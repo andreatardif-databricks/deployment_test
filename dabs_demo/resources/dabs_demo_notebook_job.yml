@@ -18,6 +18,7 @@ resources:
       #     level: CAN_MANAGE
       # test comment 2
       # Testing GitHub Actions workflows - PR trigger 123
+      # New change to trigger workflow validation
 
       environments:
         - environment_key: serverless_demo_env
