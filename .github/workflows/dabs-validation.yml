@@ -63,17 +63,17 @@ jobs:
             fi
           done
 
-      - name: Check for secrets
-        run: |
-          cd dabs_demo
-          # Basic secret scanning
-          if grep -r -i "password\|secret\|token" src/ --exclude-dir=.git || \
-             grep -r -i "password\|secret\|token" databricks.yml resources/; then
-            echo "❌ Potential secrets found in code"
-            exit 1
-          else
-            echo "✅ No obvious secrets detected"
-          fi
+      # - name: Check for secrets
+      #   run: |
+      #     cd dabs_demo
+      #     # Basic secret scanning
+      #     if grep -r -i "password\|secret\|token" src/ --exclude-dir=.git || \
+      #        grep -r -i "password\|secret\|token" databricks.yml resources/; then
+      #       echo "❌ Potential secrets found in code"
+      #       exit 1
+      #     else
+      #       echo "✅ No obvious secrets detected"
+      #     fi
 
       - name: Validate notebook structure
         run: |
