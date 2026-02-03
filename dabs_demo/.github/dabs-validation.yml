@@ -4,9 +4,10 @@ on:
   pull_request:
     branches: [ main ]
     paths:
-      - 'DSA_Ops_Pipleine/databricks.yml'
-      - 'DSA_Ops_Pipleine/resources/**'
-      - 'DSA_Ops_Pipleine/src/**'
+      - 'dabs_demo/databricks.yml'
+      - 'dabs_demo/resources/**'
+      - 'dabs_demo/src/**'
+      - 'dabs_demo/.github/**'
   push:
     branches: [ main ]
 
@@ -32,12 +33,13 @@ jobs:
 
       - name: Validate YAML files
         run: |
+          cd dabs_demo
           # Validate databricks.yml
           python -c "
           import yaml
           import sys
           try:
-              with open('DSA_Ops_Pipleine/databricks.yml', 'r') as f:
+              with open('databricks.yml', 'r') as f:
                   yaml.safe_load(f)
               print('✅ databricks.yml is valid YAML')
           except Exception as e:
@@ -64,9 +66,10 @@ jobs:
 
       - name: Check for secrets
         run: |
+          cd dabs_demo
           # Basic secret scanning
-          if grep -r -i "password\|secret\|token\" src/ --exclude-dir=.git || \
-             grep -r -i "password\|secret\|token\" databricks.yml resources/; then
+          if grep -r -i "password\|secret\|token" src/ --exclude-dir=.git || \
+             grep -r -i "password\|secret\|token" databricks.yml resources/; then
             echo "❌ Potential secrets found in code"
             exit 1
           else
@@ -75,6 +78,7 @@ jobs:
 
       - name: Validate notebook structure
         run: |
+          cd dabs_demo
           # Check that notebooks are valid JSON
           find src/ -name "*.ipynb" -exec python -m json.tool {} \; > /dev/null
           echo "✅ All notebooks have valid JSON structure"
