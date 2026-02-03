@@ -17,7 +17,7 @@ resources:
       #   - group_name: dabs-example-group
       #     level: CAN_MANAGE
       # test comment 2
-      # Testing GitHub Actions workflows - PR trigger
+      # Testing GitHub Actions workflows - PR trigger 123
 
       environments:
         - environment_key: serverless_demo_env
