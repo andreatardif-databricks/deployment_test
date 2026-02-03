@@ -1,0 +1,20 @@
+resources:
+  pipelines:
+    custom_libraries_pipeline:
+      name: custom_libraries_pipeline_${bundle.target}
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      libraries:
+        - notebook:
+            path: ../src/test_pipeline.ipynb
+      continuous: false
+      environment:
+        dependencies:
+          - ../utils/helpers/dist/helpers-0.1.0-py3-none-any.whl
+            
+      
+      
+      
+      
+

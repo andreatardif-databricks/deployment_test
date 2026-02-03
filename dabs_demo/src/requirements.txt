@@ -1,0 +1,2 @@
+databricks-sdk>0.48.0
+boto3

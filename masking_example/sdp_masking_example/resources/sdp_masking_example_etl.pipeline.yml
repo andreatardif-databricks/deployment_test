@@ -1,0 +1,14 @@
+# The main pipeline for sdp_masking_example
+
+resources:
+  pipelines:
+    sdp_masking_example_etl:
+      name: sdp_masking_example_etl
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      root_path: "../src/sdp_masking_example_etl"
+
+      libraries:
+        - glob:
+            include: ../src/sdp_masking_example_etl/transformations/**

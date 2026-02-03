@@ -1,0 +1,58 @@
+# Databricks Asset Bundle for Kafka Alerting Pipeline
+# This bundle creates a DLT pipeline that reads from Kafka and creates per-client schemas
+bundle:
+  name: kafka_alerting_pipeline
+  uuid: kafka-alert-pipeline-$(uuidgen)
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    default: "andrea_tardif"
+  schema:
+    default: "kafka_pipeline"
+  kafka_bootstrap_servers:
+    description: "Kafka bootstrap servers (e.g., localhost:9092)"
+  kafka_topic:
+    description: "Kafka topic to read from"
+  alert_email:
+    description: "Email address for pipeline failure alerts"
+  pipeline_name:
+    default: "kafka_client_pipeline"
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+      root_path: /Workspace/Users/andrea.tardif@databricks.com/.bundle/${bundle.name}/${bundle.target}
+
+    variables:
+      catalog: "andrea_tardif"
+      schema: "kafka_pipeline_dev"
+      pipeline_name: "kafka_client_pipeline_dev"
+      kafka_bootstrap_servers: "localhost:9092"
+      kafka_topic: "client-events"
+      alert_email: "andrea.tardif@databricks.com"
+
+    permissions:
+      - user_name: andrea.tardif@databricks.com
+        level: CAN_MANAGE
+
+  prod:
+    mode: production
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+      root_path: /Workspace/Users/andrea.tardif@databricks.com/.bundle/${bundle.name}/${bundle.target}
+
+    variables:
+      catalog: "andrea_tardif"
+      schema: "kafka_pipeline_prod"
+      pipeline_name: "kafka_client_pipeline_prod"
+
+    permissions:
+      - user_name: andrea.tardif@databricks.com
+        level: CAN_MANAGE
+

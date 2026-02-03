@@ -1,0 +1,68 @@
+# This is a Databricks asset bundle definition for dabs_demo.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: dabs_demo
+  uuid: 8153630e-c0d9-4b5c-86fa-5e1fb55129a0
+
+include:
+  - resources/*.yml
+
+variables:
+  warehouse_id: {}
+  schema:
+    default: "bronze"
+  catalog:
+    default: "andrea_tardif"
+  env:
+    default: "dev"
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+      root_path: /Workspace/Users/andrea.tardif@databricks.com/.bundle/${bundle.name}/${bundle.target}
+
+    variables:
+      warehouse_id: "30d6e63b35f828c5"
+      schema: "bronze"
+      catalog: "andrea_tardif"
+      env: "dev"
+
+    permissions:
+      - user_name: andrea.tardif@databricks.com
+        level: CAN_MANAGE
+  
+  test:
+    mode: production
+    default: false
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+      root_path: /Workspace/Users/andrea.tardif@databricks.com/.bundle/${bundle.name}/${bundle.target}
+
+    variables:
+      warehouse_id: "30d6e63b35f828c5"
+      schema: "silver"
+      catalog: "andrea_tardif"
+      env: "test"
+
+    permissions:
+      - user_name: andrea.tardif@databricks.com
+        level: CAN_MANAGE
+
+  prod:
+    mode: production
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+      root_path: /Workspace/Users/andrea.tardif@databricks.com/.bundle/${bundle.name}/${bundle.target}
+
+    variables:
+      warehouse_id: "30d6e63b35f828c5"
+      schema: "silver"
+      catalog: "andrea_tardif"
+      env: "prod"
+
+    permissions:
+      - user_name: andrea.tardif@databricks.com
+        level: CAN_MANAGE

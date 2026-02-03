@@ -1,0 +1,9 @@
+# Python dependencies for Kafka Alerting Pipeline
+# These are typically pre-installed in Databricks Runtime
+
+# Core dependencies (usually already available in Databricks)
+pyspark>=3.4.0
+
+# DLT is part of Databricks Runtime, no separate install needed
+# Kafka support is included in DBR for Structured Streaming
+

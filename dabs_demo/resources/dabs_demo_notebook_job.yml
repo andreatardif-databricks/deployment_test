@@ -1,0 +1,25 @@
+resources:
+  jobs:
+    notebook_job:
+      name: notebook_job
+      tasks:
+        - task_key: article_data
+          notebook_task:
+            notebook_path: ../src/notebook.ipynb
+            source: WORKSPACE
+            base_parameters:
+                target_env: "${bundle.target}"
+                catalog: ${var.catalog}
+                database: ${var.schema}
+          environment_key: serverless_demo_env
+          max_retries: 0
+      permissions:
+        - group_name: dabs-example-group
+          level: CAN_MANAGE
+
+      environments:
+        - environment_key: serverless_demo_env
+          spec:
+            client: "1"
+            dependencies: 
+              - -r /Workspace/Users/andrea.tardif@databricks.com/.bundle/dabs_demo/dev/files/src/requirements.txt

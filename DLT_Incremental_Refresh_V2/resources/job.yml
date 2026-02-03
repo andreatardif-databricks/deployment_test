@@ -1,0 +1,36 @@
+# Job definition for dlt_incremental_refresh_demo
+resources:
+  jobs:
+    dlt_incremental_refresh_demo_job:
+      name: dlt_incremental_refresh_demo_event_log_job
+      
+      tasks:
+        - task_key: generate_random_data_task
+          notebook_task:
+            notebook_path: ../src/generate_random_data.ipynb
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+
+        - task_key: dlt_pipeline_task
+          depends_on:
+            - task_key: generate_random_data_task
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.dlt_incremental_refresh_demo_pipeline.id}
+
+        - task_key: run_event_log_notebook
+          depends_on:
+            - task_key: dlt_pipeline_task
+          notebook_task:
+            notebook_path: ../src/event_log_creation.ipynb
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+
+        - task_key: dashboard_refresh_task
+          depends_on:
+            - task_key: run_event_log_notebook
+          dashboard_task:
+            dashboard_id: ${resources.dashboards.mv_refresh_dashboard.id}
+
+        

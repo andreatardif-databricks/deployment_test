@@ -1,0 +1,8 @@
+CREATE CATALOG IF NOT EXISTS IDENTIFIER(:catalog);
+CREATE SCHEMA IF NOT EXISTS IDENTIFIER(concat(:catalog, '.', :schema));
+
+USE CATALOG IDENTIFIER(:catalog);
+USE SCHEMA IDENTIFIER(:schema);
+
+CREATE TABLE IF NOT EXISTS test_table_dabs (id INT, name STRING);
+CREATE TABLE IF NOT EXISTS IDENTIFIER(concat(:env, '_test_table_dabs')) (id INT, name STRING);

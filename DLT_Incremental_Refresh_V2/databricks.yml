@@ -1,0 +1,32 @@
+bundle:
+  name: DLT_Incremental_Refresh_V2
+  uuid: ce901bb9-25ef-4c8c-ac65-55bae251bb3a
+
+include:
+  - resources/*.yml
+
+variables:
+  pipeline_name:
+    default: dlt_incremental_refresh_demo
+  catalog:
+    default: main
+  schema:
+    default: dlt_incremental_refresh_demo
+  warehouse_id:
+    default: 862f1d757f0424f7
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+
+  prod:
+    mode: production
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+      root_path: /Workspace/Users/andrea.tardif@databricks.com/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+      - user_name: andrea.tardif@databricks.com
+        level: CAN_MANAGE

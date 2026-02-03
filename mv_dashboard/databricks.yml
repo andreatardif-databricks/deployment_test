@@ -1,0 +1,35 @@
+bundle:
+  name: mv_dashboard
+  uuid: 7f477347-3cd4-4226-ae5d-dce20461492e
+
+include:
+  - resources/*.yml
+
+variables:
+  warehouse_id:
+    default: 862f1d757f0424f7
+  catalog:
+    default: main
+  schema:
+    default: incremental_dlt
+
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+      - user_name: ${workspace.current_user.userName}
+        level: CAN_MANAGE
+
+  prod:
+    mode: production
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+      root_path: /Workspace/Users/andrea.tardif@databricks.com/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+      - user_name: ${workspace.current_user.userName}
+        level: CAN_MANAGE

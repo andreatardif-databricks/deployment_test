@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "helpers"
+version = "0.1.0"
+description = "Helper utilities including get_logger"
+requires-python = ">=3.8"
+
+[tool.setuptools]
+packages = ["helpers"]
+
+[tool.setuptools.package-dir]
+helpers = "."

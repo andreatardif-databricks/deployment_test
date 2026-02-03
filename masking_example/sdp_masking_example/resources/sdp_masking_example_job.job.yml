@@ -1,0 +1,16 @@
+# A sample job for sdp_masking_example.
+
+resources:
+  jobs:
+    sdp_masking_example_job:
+      name: sdp_masking_example_job
+
+      tasks:
+        - task_key: generate_data
+          notebook_task:
+            notebook_path: ../src/datagen_uc_functions.ipynb
+        - task_key: mask_data_pipeline
+          depends_on:
+            - task_key: generate_data
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.sdp_masking_example_etl.id}

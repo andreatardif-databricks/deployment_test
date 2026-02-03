@@ -1,0 +1,32 @@
+bundle:
+  name: custom_libraries
+
+workspace:
+  host: https://e2-demo-field-eng.cloud.databricks.com
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      root_path: ~/.bundle/${bundle.name}/${bundle.target}
+    
+  prod:
+    mode: production
+    workspace:
+      root_path: /Shared/.bundle/prod/${bundle.name}
+    permissions:
+      - level: CAN_MANAGE
+        group_name: admins
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: The catalog to use
+    default: users
+  schema:
+    description: The schema to use
+    default: andrea_tardif
+

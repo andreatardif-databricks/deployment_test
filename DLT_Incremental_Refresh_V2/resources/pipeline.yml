@@ -1,0 +1,42 @@
+# The main pipeline for dlt_incremental_refresh_demo
+resources:
+  pipelines:
+    dlt_incremental_refresh_demo_pipeline:
+      name: ${var.pipeline_name}
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      libraries:
+        - notebook:
+            path: ../src/dlt_pipeline.ipynb
+
+      serverless: true
+
+      event_log:
+        catalog: ${var.catalog}
+        schema: ${var.schema}
+        name: demo_event_log
+
+      configuration:
+        bundle.sourcePath: ${workspace.file_path}/src
+        bundle.var.catalog: ${var.catalog}
+        bundle.var.schema: ${var.schema}
+
+    alpha_pipeline_test:
+      name: "Alpha Pipeline Test"
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      libraries:
+        - notebook:
+            path: ../src/alpha_vantage_pipeline.ipynb
+
+      serverless: true
+
+      event_log:
+        catalog: ${var.catalog}
+        schema: ${var.schema}
+        name: alpha_vantage_event_log
+
+      configuration:
+        bundle.sourcePath: ${workspace.file_path}/src
+        bundle.var.catalog: ${var.catalog}
+        bundle.var.schema: ${var.schema}

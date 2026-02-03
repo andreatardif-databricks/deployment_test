@@ -1,0 +1,6 @@
+resources:
+  dashboards:
+    mv_refresh_dashboard:
+      display_name: "DLT MV Refresh Observability Dashboard"
+      file_path: ../src/mv_refresh_dashboard.lvdash.json
+      warehouse_id: ${var.warehouse_id}

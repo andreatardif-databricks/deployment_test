@@ -1,0 +1,742 @@
+{
+    "datasets": [
+        {
+            "name": "94f29c01",
+            "displayName": "[Query] raw_event_log",
+            "query": "DECLARE use_catalog_query STRING;\nDECLARE use_schema_query STRING;\nDECLARE catalog_name STRING;\nDECLARE schema_name STRING;\n\nSET var catalog_name = CASE\nWHEN current_user() = current_user() THEN 'main'\nELSE 'main'\nEND;\n\nSET var use_catalog_query = concat('USE CATALOG ', catalog_name, ';');\nEXECUTE IMMEDIATE use_catalog_query;\n\nSET var schema_name = CASE\nWHEN catalog_name = 'main' THEN 'incremental_dlt'\nELSE 'incremental_dlt_test'\nEND;\n\nSET var use_schema_query = concat('USE SCHEMA ', schema_name, ';');\nEXECUTE IMMEDIATE use_schema_query;\n\nSELECT *\nFROM raw_event_log"
+        },
+        {
+            "name": "72783dfd",
+            "displayName": "[Query] combined_event_log",
+            "query": "DECLARE use_catalog_query STRING;\nDECLARE use_schema_query STRING;\nDECLARE catalog_name STRING;\nDECLARE schema_name STRING;\n\nSET var catalog_name = CASE\nWHEN current_user() = current_user() THEN 'main'\nELSE 'main'\nEND;\n\nSET var use_catalog_query = concat('USE CATALOG ', catalog_name, ';');\nEXECUTE IMMEDIATE use_catalog_query;\n\nSET var schema_name = CASE\nWHEN catalog_name = 'main' THEN 'incremental_dlt'\nELSE 'incremental_dlt_test'\nEND;\n\nSET var use_schema_query = concat('USE SCHEMA ', schema_name, ';');\nEXECUTE IMMEDIATE use_schema_query;\n\nSELECT *\nFROM combined_event_log"
+        },
+        {
+            "name": "b873a4b4",
+            "displayName": "[Query] Incremental Refresh %",
+            "query": "DECLARE use_catalog_query STRING;\nDECLARE use_schema_query STRING;\nDECLARE catalog_name STRING;\nDECLARE schema_name STRING;\n\nSET var catalog_name = CASE\nWHEN current_user() = current_user() THEN 'main'\nELSE 'main'\nEND;\n\nSET var use_catalog_query = concat('USE CATALOG ', catalog_name, ';');\nEXECUTE IMMEDIATE use_catalog_query;\n\nSET var schema_name = CASE\nWHEN catalog_name = 'main' THEN 'incremental_dlt'\nELSE 'incremental_dlt_test'\nEND;\n\nSET var use_schema_query = concat('USE SCHEMA ', schema_name, ';');\nEXECUTE IMMEDIATE use_schema_query;\nSELECT \n    SUM(CASE WHEN refresh_type = 'COMPLETE_RECOMPUTE' THEN 1 ELSE 0 END) AS complete_recompute,\n    SUM(CASE WHEN refresh_type <> 'COMPLETE_RECOMPUTE' THEN 1 ELSE 0 END) AS incremental_refresh, \n    (SUM(CASE WHEN refresh_type <> 'COMPLETE_RECOMPUTE' THEN 1 ELSE 0 END)) / count(*) as incremental_refresh_percent,\n    (SUM(CASE WHEN refresh_type = 'COMPLETE_RECOMPUTE' THEN 1 ELSE 0 END)) / count(*) as recompute_refresh_percent\nFROM combined_event_log"
+        },
+        {
+            "name": "a78f33a2",
+            "displayName": "[Query] Recompute Reason Count",
+            "query": "DECLARE use_catalog_query STRING;\nDECLARE use_schema_query STRING;\nDECLARE catalog_name STRING;\nDECLARE schema_name STRING;\n\nSET var catalog_name = CASE\nWHEN current_user() = current_user() THEN 'main'\nELSE 'main'\nEND;\n\nSET var use_catalog_query = concat('USE CATALOG ', catalog_name, ';');\nEXECUTE IMMEDIATE use_catalog_query;\n\nSET var schema_name = CASE\nWHEN catalog_name = 'main' THEN 'incremental_dlt'\nELSE 'incremental_dlt_test'\nEND;\n\nSET var use_schema_query = concat('USE SCHEMA ', schema_name, ';');\nEXECUTE IMMEDIATE use_schema_query;\nSELECT recompute_reason, count(*)\nFROM combined_event_log\nGROUP BY recompute_reason"
+        }
+    ],
+    "pages": [
+        {
+            "name": "10831f85",
+            "displayName": "Overview",
+            "layout": [
+                {
+                    "widget": {
+                        "name": "35d1cc54",
+                        "queries": [
+                            {
+                                "name": "main_query",
+                                "query": {
+                                    "datasetName": "b873a4b4",
+                                    "fields": [
+                                        {
+                                            "name": "recompute_refresh_percent",
+                                            "expression": "`recompute_refresh_percent`"
+                                        }
+                                    ],
+                                    "disaggregated": true
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 2,
+                            "widgetType": "counter",
+                            "encodings": {
+                                "value": {
+                                    "fieldName": "recompute_refresh_percent",
+                                    "format": {
+                                        "type": "number-percent",
+                                        "decimalPlaces": {
+                                            "type": "max",
+                                            "places": 2
+                                        }
+                                    },
+                                    "displayName": "recompute_refresh_percent"
+                                }
+                            },
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Complete Recompute %"
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 0,
+                        "y": 2,
+                        "width": 2,
+                        "height": 3
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "9fab9477",
+                        "queries": [
+                            {
+                                "name": "main_query",
+                                "query": {
+                                    "datasetName": "b873a4b4",
+                                    "fields": [
+                                        {
+                                            "name": "incremental_refresh_percent",
+                                            "expression": "`incremental_refresh_percent`"
+                                        }
+                                    ],
+                                    "disaggregated": true
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 2,
+                            "widgetType": "counter",
+                            "encodings": {
+                                "value": {
+                                    "fieldName": "incremental_refresh_percent",
+                                    "format": {
+                                        "type": "number-percent",
+                                        "decimalPlaces": {
+                                            "type": "max",
+                                            "places": 2
+                                        }
+                                    },
+                                    "displayName": "incremental_refresh_percent"
+                                }
+                            },
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Incremental Refresh %"
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 2,
+                        "y": 2,
+                        "width": 2,
+                        "height": 3
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "fab707f2",
+                        "queries": [
+                            {
+                                "name": "main_query",
+                                "query": {
+                                    "datasetName": "a78f33a2",
+                                    "fields": [
+                                        {
+                                            "name": "sum(count(1))",
+                                            "expression": "SUM(`count(1)`)"
+                                        },
+                                        {
+                                            "name": "recompute_reason",
+                                            "expression": "`recompute_reason`"
+                                        }
+                                    ],
+                                    "disaggregated": false
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 3,
+                            "widgetType": "bar",
+                            "encodings": {
+                                "x": {
+                                    "fieldName": "sum(count(1))",
+                                    "scale": {
+                                        "type": "quantitative"
+                                    },
+                                    "axis": {
+                                        "hideTitle": true
+                                    },
+                                    "displayName": "Sum of count(1)"
+                                },
+                                "y": {
+                                    "fieldName": "recompute_reason",
+                                    "scale": {
+                                        "type": "categorical",
+                                        "sort": {
+                                            "by": "x-reversed"
+                                        }
+                                    },
+                                    "axis": {
+                                        "hideTitle": true
+                                    },
+                                    "displayName": "recompute_reason"
+                                }
+                            },
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Recompute Reason Count"
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 0,
+                        "y": 5,
+                        "width": 3,
+                        "height": 6
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "dc88d420",
+                        "queries": [
+                            {
+                                "name": "main_query",
+                                "query": {
+                                    "datasetName": "72783dfd",
+                                    "fields": [
+                                        {
+                                            "name": "count(refresh_type)",
+                                            "expression": "COUNT(`refresh_type`)"
+                                        },
+                                        {
+                                            "name": "refresh_type",
+                                            "expression": "`refresh_type`"
+                                        }
+                                    ],
+                                    "disaggregated": false
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 3,
+                            "widgetType": "pie",
+                            "encodings": {
+                                "angle": {
+                                    "fieldName": "count(refresh_type)",
+                                    "scale": {
+                                        "type": "quantitative"
+                                    },
+                                    "axis": {
+                                        "hideTitle": true
+                                    },
+                                    "displayName": "Count of refresh_type"
+                                },
+                                "color": {
+                                    "fieldName": "refresh_type",
+                                    "scale": {
+                                        "type": "categorical"
+                                    },
+                                    "legend": {
+                                        "position": "right"
+                                    },
+                                    "displayName": "Refresh Type"
+                                }
+                            },
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Refresh Stat Per Table/MV"
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 3,
+                        "y": 5,
+                        "width": 3,
+                        "height": 6
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "c74e17f9",
+                        "textbox_spec": "## Declarative Pipelines Incremental Refresh Monitoring Dashboard\n\nThis dashboard provides visibility into the performance and quality of declarative pipeline refreshes. It tracks the proportion of complete recomputes versus incremental refreshes, highlights the total number of pipeline runs, identifies common recompute reasons, and breaks down refresh types per table or materialized view. Use this dashboard to monitor efficiency, detect bottlenecks, and optimize declarative pipeline workflows by minimizing unnecessary full recomputes.\n"
+                    },
+                    "position": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 6,
+                        "height": 2
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "ac5959c6",
+                        "queries": [
+                            {
+                                "name": "main_query",
+                                "query": {
+                                    "datasetName": "72783dfd",
+                                    "fields": [
+                                        {
+                                            "name": "timestamp",
+                                            "expression": "`timestamp`"
+                                        },
+                                        {
+                                            "name": "pipeline_name",
+                                            "expression": "`pipeline_name`"
+                                        },
+                                        {
+                                            "name": "refresh_type",
+                                            "expression": "`refresh_type`"
+                                        },
+                                        {
+                                            "name": "output_dataset",
+                                            "expression": "`output_dataset`"
+                                        },
+                                        {
+                                            "name": "chosen_maintenance_type",
+                                            "expression": "`chosen_maintenance_type`"
+                                        },
+                                        {
+                                            "name": "recompute_reason",
+                                            "expression": "`recompute_reason`"
+                                        },
+                                        {
+                                            "name": "table_type",
+                                            "expression": "`table_type`"
+                                        },
+                                        {
+                                            "name": "cost",
+                                            "expression": "`cost`"
+                                        }
+                                    ],
+                                    "disaggregated": true
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 1,
+                            "widgetType": "table",
+                            "encodings": {
+                                "columns": [
+                                    {
+                                        "fieldName": "timestamp",
+                                        "dateTimeFormat": "YYYY-MM-DD HH:mm:ss.SSS",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "datetime",
+                                        "visible": true,
+                                        "order": 0,
+                                        "title": "Timestamp",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "timestamp"
+                                    },
+                                    {
+                                        "fieldName": "pipeline_name",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 1,
+                                        "title": "Pipeline",
+                                        "allowSearch": false,
+                                        "alignContent": "left",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "pipeline_name"
+                                    },
+                                    {
+                                        "fieldName": "refresh_type",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 2,
+                                        "title": "Refresh Type",
+                                        "allowSearch": false,
+                                        "alignContent": "left",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "refresh_type"
+                                    },
+                                    {
+                                        "fieldName": "output_dataset",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 3,
+                                        "title": "Output Dataset",
+                                        "allowSearch": false,
+                                        "alignContent": "left",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "output_dataset"
+                                    },
+                                    {
+                                        "fieldName": "chosen_maintenance_type",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 4,
+                                        "title": "Maintenance Type",
+                                        "allowSearch": false,
+                                        "alignContent": "left",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "chosen_maintenance_type"
+                                    },
+                                    {
+                                        "fieldName": "recompute_reason",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 6,
+                                        "title": "Recompute Reason",
+                                        "allowSearch": false,
+                                        "alignContent": "left",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "recompute_reason"
+                                    },
+                                    {
+                                        "fieldName": "table_type",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "string",
+                                        "displayAs": "string",
+                                        "visible": true,
+                                        "order": 7,
+                                        "title": "Table Type",
+                                        "allowSearch": false,
+                                        "alignContent": "left",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "displayName": "table_type"
+                                    },
+                                    {
+                                        "fieldName": "cost",
+                                        "numberFormat": "0,000",
+                                        "booleanValues": [
+                                            "false",
+                                            "true"
+                                        ],
+                                        "imageUrlTemplate": "{{ @ }}",
+                                        "imageTitleTemplate": "{{ @ }}",
+                                        "imageWidth": "",
+                                        "imageHeight": "",
+                                        "linkUrlTemplate": "{{ @ }}",
+                                        "linkTextTemplate": "{{ @ }}",
+                                        "linkTitleTemplate": "{{ @ }}",
+                                        "linkOpenInNewTab": true,
+                                        "type": "float",
+                                        "displayAs": "number",
+                                        "visible": true,
+                                        "order": 8,
+                                        "title": "Compute Cost",
+                                        "allowSearch": false,
+                                        "alignContent": "right",
+                                        "allowHTML": false,
+                                        "highlightLinks": false,
+                                        "useMonospaceFont": false,
+                                        "preserveWhitespace": false,
+                                        "description": "Not $DBU. Compute Cost of refresh.",
+                                        "displayName": "cost"
+                                    }
+                                ]
+                            },
+                            "invisibleColumns": [
+                                {
+                                    "booleanValues": [
+                                        "false",
+                                        "true"
+                                    ],
+                                    "imageUrlTemplate": "{{ @ }}",
+                                    "imageTitleTemplate": "{{ @ }}",
+                                    "imageWidth": "",
+                                    "imageHeight": "",
+                                    "linkUrlTemplate": "{{ @ }}",
+                                    "linkTextTemplate": "{{ @ }}",
+                                    "linkTitleTemplate": "{{ @ }}",
+                                    "linkOpenInNewTab": true,
+                                    "name": "query",
+                                    "type": "string",
+                                    "displayAs": "string",
+                                    "order": 5,
+                                    "title": "query",
+                                    "allowSearch": false,
+                                    "alignContent": "left",
+                                    "allowHTML": false,
+                                    "highlightLinks": false,
+                                    "useMonospaceFont": false,
+                                    "preserveWhitespace": false
+                                },
+                                {
+                                    "numberFormat": "0.00",
+                                    "booleanValues": [
+                                        "false",
+                                        "true"
+                                    ],
+                                    "imageUrlTemplate": "{{ @ }}",
+                                    "imageTitleTemplate": "{{ @ }}",
+                                    "imageWidth": "",
+                                    "imageHeight": "",
+                                    "linkUrlTemplate": "{{ @ }}",
+                                    "linkTextTemplate": "{{ @ }}",
+                                    "linkTitleTemplate": "{{ @ }}",
+                                    "linkOpenInNewTab": true,
+                                    "name": "rounded_cost",
+                                    "type": "float",
+                                    "displayAs": "number",
+                                    "order": 9,
+                                    "title": "rounded_cost",
+                                    "allowSearch": false,
+                                    "alignContent": "right",
+                                    "allowHTML": false,
+                                    "highlightLinks": false,
+                                    "useMonospaceFont": false,
+                                    "preserveWhitespace": false
+                                }
+                            ],
+                            "allowHTMLByDefault": false,
+                            "itemsPerPage": 25,
+                            "paginationSize": "default",
+                            "condensed": true,
+                            "withRowNumber": false,
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Event Log Information"
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 0,
+                        "y": 12,
+                        "width": 6,
+                        "height": 6
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "007e47e3",
+                        "queries": [
+                            {
+                                "name": "main_query",
+                                "query": {
+                                    "datasetName": "94f29c01",
+                                    "fields": [
+                                        {
+                                            "name": "countdistinct(pipeline_name)",
+                                            "expression": "COUNT(DISTINCT `pipeline_name`)"
+                                        }
+                                    ],
+                                    "disaggregated": false
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 2,
+                            "widgetType": "counter",
+                            "encodings": {
+                                "value": {
+                                    "fieldName": "countdistinct(pipeline_name)",
+                                    "displayName": "Count of Unique pipeline_name"
+                                }
+                            },
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Pipeline Count"
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 4,
+                        "y": 2,
+                        "width": 2,
+                        "height": 3
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "adb07d71",
+                        "queries": [
+                            {
+                                "name": "dashboards/01f04a172c151475a21c39ba16461b58/datasets/01f04a19ecbc1d92b58711985eb2267b_recompute_reason",
+                                "query": {
+                                    "datasetName": "72783dfd",
+                                    "fields": [
+                                        {
+                                            "name": "recompute_reason",
+                                            "expression": "`recompute_reason`"
+                                        },
+                                        {
+                                            "name": "recompute_reason_associativity",
+                                            "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                                        }
+                                    ],
+                                    "disaggregated": false
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 2,
+                            "widgetType": "filter-single-select",
+                            "encodings": {
+                                "fields": [
+                                    {
+                                        "fieldName": "recompute_reason",
+                                        "displayName": "recompute_reason",
+                                        "queryName": "dashboards/01f04a172c151475a21c39ba16461b58/datasets/01f04a19ecbc1d92b58711985eb2267b_recompute_reason"
+                                    }
+                                ]
+                            },
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Recompute Type"
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 3,
+                        "y": 11,
+                        "width": 3,
+                        "height": 1
+                    }
+                },
+                {
+                    "widget": {
+                        "name": "f7a6c191",
+                        "queries": [
+                            {
+                                "name": "dashboards/01f04a172c151475a21c39ba16461b58/datasets/01f04a19ecbc1d92b58711985eb2267b_pipeline_name",
+                                "query": {
+                                    "datasetName": "72783dfd",
+                                    "fields": [
+                                        {
+                                            "name": "pipeline_name",
+                                            "expression": "`pipeline_name`"
+                                        },
+                                        {
+                                            "name": "pipeline_name_associativity",
+                                            "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                                        }
+                                    ],
+                                    "disaggregated": false
+                                }
+                            }
+                        ],
+                        "spec": {
+                            "version": 2,
+                            "widgetType": "filter-single-select",
+                            "encodings": {
+                                "fields": [
+                                    {
+                                        "fieldName": "pipeline_name",
+                                        "displayName": "pipeline_name",
+                                        "queryName": "dashboards/01f04a172c151475a21c39ba16461b58/datasets/01f04a19ecbc1d92b58711985eb2267b_pipeline_name"
+                                    }
+                                ]
+                            },
+                            "frame": {
+                                "showTitle": true,
+                                "title": "Pipeline Name"
+                            }
+                        }
+                    },
+                    "position": {
+                        "x": 0,
+                        "y": 11,
+                        "width": 3,
+                        "height": 1
+                    }
+                }
+            ],
+            "pageType": "PAGE_TYPE_CANVAS"
+        }
+    ],
+    "uiSettings": {
+        "theme": {}
+    }
+}

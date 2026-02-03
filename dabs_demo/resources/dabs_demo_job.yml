@@ -1,0 +1,97 @@
+variables:
+  job_schedule:  
+    default: "0 30 0/8 ? * *"
+  job_status: 
+    default: "PAUSED" 
+
+resources:
+  jobs:
+    dabs_demo_job:
+      name: dabs_demo_job
+      email_notifications:
+         on_duration_warning_threshold_exceeded:
+           - ${workspace.current_user}
+
+      health:
+        rules:
+          - metric: RUN_DURATION_SECONDS
+            op: GREATER_THAN
+            value: 10
+
+      tasks:
+        # - task_key: create-external-credential-task
+        #   notebook_task:
+        #     notebook_path: ../src/notebook.ipynb 
+        #   # environment_key: serverless_demo_env
+
+        - task_key: create-dlt-task
+          # depends_on:
+          #   - task_key: create-external-credential-task
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.dabs_demo_pipeline.id}
+
+        - task_key: create-table-sql-task
+          # depends_on:
+          #     - task_key: create-external-credential-task
+          #     - task_key: create-dlt-task
+          # run_if: ALL_DONE
+          depends_on:
+            - task_key: create-dlt-task
+          sql_task:
+            file:
+              path: ../src/create_tables.sql
+              source: WORKSPACE
+            warehouse_id: ${var.warehouse_id}
+            
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: env
+          default: ${var.env}
+      schedule:
+        quartz_cron_expression: ${var.job_schedule}
+        timezone_id: "America/New_York"  
+
+      # environments:
+      #   - environment_key: serverless_demo_env
+      #     spec:
+      #       client: "1"
+      #       dependencies:
+      #         - -r /Workspace/Users/andrea.tardif@databricks.com/.bundle/dabs_demo/dev/files/src/requirements.txt
+
+  pipelines:
+    dabs_demo_pipeline:
+      name: dabs_demo_pipeline
+      catalog: andrea_tardif
+      schema: bronze
+      serverless: true
+      channel: PREVIEW
+      libraries:
+        - notebook:
+            path: ../src/dlt_pipeline.ipynb
+      event_log:
+        name: logs_dabs_demo
+        catalog: andrea_tardif
+        schema: bronze
+      configuration:
+        bundle.sourcePath: ${workspace.file_path}/src 
+      
+      permissions:
+        - service_principal_name: 8c0ad3cb-e67d-49b0-b21c-a17d103a2497
+          level: IS_OWNER
+
+      run_as:
+        service_principal_name: 8c0ad3cb-e67d-49b0-b21c-a17d103a2497
+
+targets:
+  dev:
+    variables:
+      job_schedule: "0 30 0/8 ? * *"
+  
+  prod:
+    variables:
+      job_schedule: "0 30 0/4 ? * *"
+
+      
