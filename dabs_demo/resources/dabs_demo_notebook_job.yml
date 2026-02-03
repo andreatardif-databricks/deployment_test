@@ -13,9 +13,9 @@ resources:
                 database: ${var.schema}
           environment_key: serverless_demo_env
           max_retries: 0
-      permissions:
-        - group_name: dabs-example-group
-          level: CAN_MANAGE
+      # permissions:
+      #   - group_name: dabs-example-group
+      #     level: CAN_MANAGE
 
       environments:
         - environment_key: serverless_demo_env
