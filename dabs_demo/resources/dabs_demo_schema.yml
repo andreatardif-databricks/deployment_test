@@ -4,3 +4,5 @@ resources:
       name: test_schema_dabs_demo
       catalog_name: andrea_tardif
       comment: This schema was created by Databricks Asset Bundles.
+
+      # adding comment
