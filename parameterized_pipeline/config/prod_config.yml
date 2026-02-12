@@ -1,0 +1,33 @@
+# Production Environment Configuration
+# This is a sample prod configuration - customize as needed
+
+secrets:
+  databricks_secret_scope: 'prod-keyvault'
+  keyvault_url: 'https://prod-keyvault.vault.azure.net/'
+
+general:
+  dead_letter_queue:
+    kafka: null
+    topic: 'prod_dead_letter_queue'
+  
+  streaming:
+    checkpoint_path: 'abfss://spark-streaming-checkpoint@prodstorageaccount.dfs.core.windows.net'
+    consumer_group_prefix: 'prod_'
+    fail_on_missed_kafka_records: true
+  
+  schema_service:
+    schema_service_basic_auth_password_vault_key: null
+    schema_service_basic_auth_username: null
+    schema_service_url: 'http://api.prod.example.com'
+  
+  kafka:
+    main:
+      host: 'prod-eventhubs.servicebus.windows.net'
+      sas_key: null
+      supports_compression: false
+      use_oauth: true
+  
+  kafka_oauth:
+    client_id: 'prod-client-id'
+    client_secret_vault_key: 'prod-client-secret'
+    token_url: 'https://login.microsoftonline.com/tenant-id/oauth2/v2.0/token'
