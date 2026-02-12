@@ -1,0 +1,33 @@
+# PPE Environment Configuration
+# This configuration file contains environment-specific settings for the pipeline
+
+secrets:
+  databricks_secret_scope: 'eshareanalyticsppe-keyvault'
+  keyvault_url: 'https://analyticsppe-keyvault.vault.azure.net/'
+
+general:
+  dead_letter_queue:
+    kafka: null
+    topic: 'dead_letter_queue'
+  
+  streaming:
+    checkpoint_path: 'abfss://spark-streaming-checkpoint@eshareanalyticsppe.dfs.core.windows.net'
+    consumer_group_prefix: 'ppe_'
+    fail_on_missed_kafka_records: false
+  
+  schema_service:
+    schema_service_basic_auth_password_vault_key: null
+    schema_service_basic_auth_username: null
+    schema_service_url: 'http://api.analytics.ppe.int.e-share.us'
+  
+  kafka:
+    main:
+      host: 'eshare-analytics-eventhubs-ppe-5.servicebus.windows.net'
+      sas_key: null
+      supports_compression: false
+      use_oauth: true
+  
+  kafka_oauth:
+    client_id: '1c904a1e-fb60-4adf-849c-289dce766f19'
+    client_secret_vault_key: 'service-principal-etl-client-secret'
+    token_url: 'https://login.microsoftonline.com/8ba9573d-c2ec-4486-a1a3-3b55546c9c64/oauth2/v2.0/token'
