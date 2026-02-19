@@ -1,4 +1,4 @@
-# Fake Data Pipeline (Bronze → Silver → Gold)
+# Custom Job Alerts + Data Pipeline (Bronze → Silver → Gold)
 
 Databricks Asset Bundle project: generates fake customer order data, runs a bronze/silver/gold pipeline in Unity Catalog, and sends HTML email notifications—separate emails for success vs failure based on a condition task.
 
