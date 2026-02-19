@@ -1,0 +1,63 @@
+resources:
+  jobs:
+    fake_data_pipeline_job:
+      name: "Fake Data Pipeline (Bronze → Silver → Gold)"
+
+      environments:
+        - environment_key: serverless_env
+          spec:
+            client: "1"
+            dependencies:
+              - faker
+              - databricks-sdk
+
+      tasks:
+        # Pipeline task: sets task value job_status ("success" or unset on failure)
+        - task_key: run_pipeline
+          environment_key: serverless_env
+          notebook_task:
+            notebook_path: ../src/fake_data_pipeline.ipynb
+            base_parameters:
+              catalog: "andrea_tardif"
+              job_id: "{{job.id}}"
+              run_id: "{{job.run_id}}"
+              start_time: "{{job.start_time.timestamp_ms}}"
+
+        # Condition: true when job_status == "success", false otherwise (including pipeline failure)
+        - task_key: check_status
+          condition_task:
+            op: EQUAL_TO
+            left: '{{tasks.run_pipeline.values.job_status}}'
+            right: "success"
+          depends_on:
+            - task_key: run_pipeline
+
+        # Success path: run notification when condition is true
+        - task_key: send_notification_success
+          environment_key: serverless_env
+          depends_on:
+            - task_key: check_status
+              outcome: "true"
+          notebook_task:
+            notebook_path: ../src/notification_webhook_success.ipynb
+            base_parameters:
+              job_id: "{{job.id}}"
+              run_id: "{{job.run_id}}"
+              job_status: "success"
+
+        # Failure path: run notification when condition is false
+        - task_key: send_notification_failure
+          environment_key: serverless_env
+          depends_on:
+            - task_key: check_status
+              outcome: "false"
+          notebook_task:
+            notebook_path: ../src/notification_webhook_failure.ipynb
+            base_parameters:
+              job_id: "{{job.id}}"
+              run_id: "{{job.run_id}}"
+              job_status: "failure"
+
+      tags:
+        team: "data-engineering"
+        owner: "andrea_tardif"
