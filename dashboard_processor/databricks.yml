@@ -1,0 +1,30 @@
+# Databricks asset bundle for dashboard processing
+bundle:
+  name: dashboard_processor
+
+include:
+  - resources/*.yml
+
+variables:
+  schema:
+    default: "bronze"
+  catalog:
+    default: "andrea_tardif"
+  table_name:
+    default: "dashboards_merged"
+  env:
+    default: "dev"
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+
+    variables:
+      schema: "bronze"
+      catalog: "andrea_tardif"
+      table_name: "dashboards_merged"
+      env: "dev"
+  

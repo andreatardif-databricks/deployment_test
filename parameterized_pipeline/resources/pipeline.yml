@@ -1,0 +1,96 @@
+# DLT Pipeline definition
+# This pipeline uses variables from databricks.yml to support multiple configurations
+# without duplicating the pipeline definition
+
+resources:
+  pipelines:
+    # Basic pipeline without external config file
+    data_pipeline:
+      name: "[${bundle.target}] ${bundle.name}_basic"
+      
+      # Pipeline configuration
+      target: ${var.catalog}.${var.schema}
+      
+      # Use variables to make the pipeline configurable
+      configuration:
+        catalog: ${var.catalog}
+        schema: ${var.schema}
+        source_table: ${var.source_table}
+        target_table: ${var.target_table}
+        pipeline_config: ${var.pipeline_config}
+      
+      # Pipeline libraries
+      libraries:
+        - notebook:
+            path: ../src/pipeline.ipynb
+      
+      # Cluster configuration
+      clusters:
+        - label: default
+          autoscale:
+            min_workers: 1
+            max_workers: 2
+          
+      # Development mode for faster iteration
+      development: true
+      
+      # Enable continuous processing
+      continuous: false
+      
+      # Photon acceleration
+      photon: true
+      
+      # Channel (current or preview)
+      channel: current
+      
+      # Permissions
+      permissions:
+        - level: CAN_VIEW
+          user_name: ${workspace.current_user.userName}
+    
+    # Pipeline that uses external YAML config file
+    data_pipeline_with_config:
+      name: "[${bundle.target}] ${bundle.name}_with_config"
+      
+      # Pipeline configuration
+      target: ${var.catalog}.${var.schema}
+      
+      # Pass config file path to the pipeline
+      configuration:
+        catalog: ${var.catalog}
+        schema: ${var.schema}
+        source_table: ${var.source_table}
+        target_table: ${var.target_table}
+        pipeline_config: ${var.pipeline_config}
+        config_file_path: ${var.config_file_path}
+      
+      # Pipeline libraries - includes both the notebook and config_loader
+      libraries:
+        - notebook:
+            path: ../src/pipeline_with_config.ipynb
+        - file:
+            path: ../src/config_loader.py
+      
+      # Cluster configuration
+      clusters:
+        - label: default
+          autoscale:
+            min_workers: 1
+            max_workers: 2
+          
+      # Development mode for faster iteration
+      development: true
+      
+      # Enable continuous processing
+      continuous: false
+      
+      # Photon acceleration
+      photon: true
+      
+      # Channel (current or preview)
+      channel: current
+      
+      # Permissions
+      permissions:
+        - level: CAN_VIEW
+          user_name: ${workspace.current_user.userName}

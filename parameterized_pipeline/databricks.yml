@@ -1,0 +1,73 @@
+# Databricks asset bundle for parameterized pipeline
+bundle:
+  name: parameterized_pipeline
+
+include:
+  - resources/*.yml
+
+# Define variables that can be used across all resources
+variables:
+  catalog:
+    description: "Unity Catalog name"
+    default: "main"
+  
+  schema:
+    description: "Schema/database name"
+    default: "default"
+  
+  source_table:
+    description: "Source table name"
+    default: "raw_data"
+  
+  target_table:
+    description: "Target table name"
+    default: "processed_data"
+  
+  pipeline_config:
+    description: "Pipeline configuration name (dev, staging, prod)"
+    default: "dev"
+  
+  config_file_path:
+    description: "Path to the YAML configuration file"
+    default: "../config/dev_config.yml"
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+    
+    variables:
+      catalog: "andrea_tardif"
+      schema: "bronze"
+      source_table: "raw_data"
+      target_table: "processed_data"
+      pipeline_config: "dev"
+      config_file_path: "../config/dev_config.yml"
+  
+  staging:
+    mode: development
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+    
+    variables:
+      catalog: "andrea_tardif"
+      schema: "silver"
+      source_table: "raw_data"
+      target_table: "processed_data"
+      pipeline_config: "staging"
+      config_file_path: "../config/ppe_config.yml"
+  
+  prod:
+    mode: production
+    workspace:
+      host: https://e2-demo-field-eng.cloud.databricks.com
+    
+    variables:
+      catalog: "andrea_tardif"
+      schema: "gold"
+      source_table: "raw_data"
+      target_table: "processed_data"
+      pipeline_config: "prod"
+      config_file_path: "../config/prod_config.yml"
