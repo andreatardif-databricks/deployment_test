@@ -1,0 +1,47 @@
+variables:
+  job_schedule:  
+    default: "0 0 8 * * ?"  # Daily at 8 AM
+  job_status: 
+    default: "PAUSED"
+  cluster_size:
+    default: "Small"
+
+resources:
+  jobs:
+    dashboard_processing_job:
+      name: dashboard_processing_job
+      
+      email_notifications:
+        on_failure:
+          - ${workspace.current_user}
+        on_success:
+          - ${workspace.current_user}
+
+      tasks:
+        - task_key: process_dashboards_task
+          notebook_task:
+            notebook_path: ../src/process_dashboards.ipynb
+            base_parameters:
+              catalog: ${var.catalog}
+              schema: ${var.schema}
+              table_name: ${var.table_name}
+          
+          timeout_seconds: 3600
+          max_retries: 2
+          retry_on_timeout: true
+
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: table_name
+          default: ${var.table_name}
+        - name: env
+          default: ${var.env}
+      
+      schedule:
+        quartz_cron_expression: "0 0 8 * * ?"
+        timezone_id: "America/New_York"
+
+      max_concurrent_runs: 1

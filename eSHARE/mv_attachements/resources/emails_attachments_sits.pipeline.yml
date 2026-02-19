@@ -1,0 +1,20 @@
+resources:
+  pipelines:
+    emails_attachments_sits:
+      name: emails_attachments_sits
+      configuration:
+        "environment": "ppe"
+      libraries:
+        - file:
+            path: ../src/mv_emails.py
+      catalog: main
+      channel: PREVIEW
+      deployment:
+        kind: BUNDLE
+        metadata_file_path: /Workspace/Users/g.sarri@eshare.com/.bundle/m365-materialized-views/m365-ppe/state/metadata.json
+      event_log:
+        catalog: main
+        name: event_log_mv_emails
+        schema: databricks_test
+      schema: databricks_test
+      serverless: true
