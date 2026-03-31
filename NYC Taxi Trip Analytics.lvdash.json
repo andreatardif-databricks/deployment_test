@@ -1,0 +1,742 @@
+{
+  "datasets": [
+    {
+      "name": "summary",
+      "displayName": "Trip Summary",
+      "queryLines": [
+        "SELECT COUNT(*) AS total_trips, ROUND(AVG(fare_amount), 2) AS avg_fare, ROUND(AVG(trip_distance), 2) AS avg_distance, ROUND(SUM(fare_amount), 2) AS total_revenue FROM samples.nyctaxi.trips"
+      ]
+    },
+    {
+      "name": "daily_trips",
+      "displayName": "Daily Trips",
+      "queryLines": [
+        "SELECT DATE_TRUNC('DAY', tpep_pickup_datetime) AS trip_date, COUNT(*) AS trip_count, ROUND(SUM(fare_amount), 2) AS daily_revenue, ROUND(AVG(fare_amount), 2) AS avg_fare FROM samples.nyctaxi.trips GROUP BY DATE_TRUNC('DAY', tpep_pickup_datetime) ORDER BY trip_date"
+      ]
+    },
+    {
+      "name": "hourly",
+      "displayName": "Hourly Distribution",
+      "queryLines": [
+        "SELECT HOUR(tpep_pickup_datetime) AS pickup_hour, COUNT(*) AS trip_count, ROUND(AVG(fare_amount), 2) AS avg_fare FROM samples.nyctaxi.trips GROUP BY HOUR(tpep_pickup_datetime) ORDER BY pickup_hour"
+      ]
+    },
+    {
+      "name": "top_pickups",
+      "displayName": "Top Pickup Zones",
+      "queryLines": [
+        "SELECT CAST(pickup_zip AS STRING) AS pickup_zip, COUNT(*) AS trip_count, ROUND(AVG(fare_amount), 2) AS avg_fare, ROUND(AVG(trip_distance), 2) AS avg_distance FROM samples.nyctaxi.trips GROUP BY pickup_zip ORDER BY trip_count DESC LIMIT 10"
+      ]
+    },
+    {
+      "name": "distance_buckets",
+      "displayName": "Distance Buckets",
+      "queryLines": [
+        "SELECT CASE WHEN trip_distance < 1 THEN '0-1 mi' WHEN trip_distance < 3 THEN '1-3 mi' WHEN trip_distance < 5 THEN '3-5 mi' WHEN trip_distance < 10 THEN '5-10 mi' ELSE '10+ mi' END AS distance_bucket, COUNT(*) AS trip_count, ROUND(AVG(fare_amount), 2) AS avg_fare FROM samples.nyctaxi.trips GROUP BY distance_bucket ORDER BY avg_fare"
+      ]
+    },
+    {
+      "name": "day_of_week",
+      "displayName": "Day of Week",
+      "queryLines": [
+        "SELECT DATE_FORMAT(tpep_pickup_datetime, 'EEEE') AS day_of_week, DAYOFWEEK(tpep_pickup_datetime) AS day_num, COUNT(*) AS trip_count, ROUND(AVG(fare_amount), 2) AS avg_fare, ROUND(SUM(fare_amount), 2) AS total_revenue FROM samples.nyctaxi.trips GROUP BY day_of_week, day_num ORDER BY day_num"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "taxi-overview",
+      "displayName": "NYC Taxi Overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "title",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# NYC Taxi Trip Analytics"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "subtitle",
+            "multilineTextboxSpec": {
+              "lines": [
+                "Analysis of NYC Yellow Taxi trips (Jan–Feb 2016) · 21,932 trips"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "total-trips",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "summary",
+                  "fields": [
+                    {
+                      "name": "total_trips",
+                      "expression": "`total_trips`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "total_trips",
+                  "displayName": "Total Trips"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Total Trips"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "avg-fare",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "summary",
+                  "fields": [
+                    {
+                      "name": "avg_fare",
+                      "expression": "`avg_fare`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "avg_fare",
+                  "displayName": "Avg Fare ($)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Avg Fare ($)"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 3,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "total-revenue",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "summary",
+                  "fields": [
+                    {
+                      "name": "total_revenue",
+                      "expression": "`total_revenue`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "total_revenue",
+                  "displayName": "Total Revenue ($)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Total Revenue ($)"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 3,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "section-trends",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Trip Trends"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "daily-trips-line",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "daily_trips",
+                  "fields": [
+                    {
+                      "name": "daily(trip_date)",
+                      "expression": "DATE_TRUNC(\"DAY\", `trip_date`)"
+                    },
+                    {
+                      "name": "trip_count",
+                      "expression": "`trip_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "daily(trip_date)",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date"
+                },
+                "y": {
+                  "fieldName": "trip_count",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Trips"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Daily Trip Volume"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 7,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "daily-revenue-line",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "daily_trips",
+                  "fields": [
+                    {
+                      "name": "daily(trip_date)",
+                      "expression": "DATE_TRUNC(\"DAY\", `trip_date`)"
+                    },
+                    {
+                      "name": "daily_revenue",
+                      "expression": "`daily_revenue`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "daily(trip_date)",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date"
+                },
+                "y": {
+                  "fieldName": "daily_revenue",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Revenue ($)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Daily Revenue"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 7,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "section-breakdowns",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Trip Breakdowns"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "hourly-bar",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "hourly",
+                  "fields": [
+                    {
+                      "name": "pickup_hour",
+                      "expression": "`pickup_hour`"
+                    },
+                    {
+                      "name": "trip_count",
+                      "expression": "`trip_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "pickup_hour",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Hour of Day"
+                },
+                "y": {
+                  "fieldName": "trip_count",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Trips"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Trips by Hour of Day"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "distance-pie",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "distance_buckets",
+                  "fields": [
+                    {
+                      "name": "distance_bucket",
+                      "expression": "`distance_bucket`"
+                    },
+                    {
+                      "name": "trip_count",
+                      "expression": "`trip_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "trip_count",
+                  "displayName": "Trips"
+                },
+                "color": {
+                  "fieldName": "distance_bucket",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Distance"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Trip Distance Distribution"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 13,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "day-of-week-bar",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "day_of_week",
+                  "fields": [
+                    {
+                      "name": "day_of_week",
+                      "expression": "`day_of_week`"
+                    },
+                    {
+                      "name": "trip_count",
+                      "expression": "`trip_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "day_of_week",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Day"
+                },
+                "y": {
+                  "fieldName": "trip_count",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Trips"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Trips by Day of Week"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 18,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "top-pickups-bar",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "top_pickups",
+                  "fields": [
+                    {
+                      "name": "pickup_zip",
+                      "expression": "`pickup_zip`"
+                    },
+                    {
+                      "name": "trip_count",
+                      "expression": "`trip_count`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "pickup_zip",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Pickup ZIP"
+                },
+                "y": {
+                  "fieldName": "trip_count",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Trips"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Top 10 Pickup Zones"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 18,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "section-details",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Detailed Metrics"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 23,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "pickup-table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "top_pickups",
+                  "fields": [
+                    {
+                      "name": "pickup_zip",
+                      "expression": "`pickup_zip`"
+                    },
+                    {
+                      "name": "trip_count",
+                      "expression": "`trip_count`"
+                    },
+                    {
+                      "name": "avg_fare",
+                      "expression": "`avg_fare`"
+                    },
+                    {
+                      "name": "avg_distance",
+                      "expression": "`avg_distance`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "pickup_zip",
+                    "displayName": "Pickup ZIP",
+                    "type": "string"
+                  },
+                  {
+                    "fieldName": "trip_count",
+                    "displayName": "Trips",
+                    "type": "number"
+                  },
+                  {
+                    "fieldName": "avg_fare",
+                    "displayName": "Avg Fare ($)",
+                    "type": "number"
+                  },
+                  {
+                    "fieldName": "avg_distance",
+                    "displayName": "Avg Distance (mi)",
+                    "type": "number"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Top 10 Pickup Zones — Detail"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 24,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "964ca017",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "daily_trips",
+                  "fields": [
+                    {
+                      "name": "trip_count",
+                      "expression": "`trip_count`"
+                    },
+                    {
+                      "name": "countdistinct(trip_date)",
+                      "expression": "COUNT(DISTINCT `trip_date`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "forecast-line",
+              "encodings": {
+                "x": {
+                  "fieldName": "trip_count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "original": {
+                    "fieldName": "countdistinct(trip_date)"
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 29,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "6e6fa644",
+            "queries": [
+              {
+                "name": "dashboards/01f12cfac7f81329b2a109370a4528b0/datasets/01f12cfac7f81428bbd26d39f9ebc75b_day_of_week",
+                "query": {
+                  "datasetName": "day_of_week",
+                  "fields": [
+                    {
+                      "name": "day_of_week",
+                      "expression": "`day_of_week`"
+                    },
+                    {
+                      "name": "day_of_week_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "day_of_week",
+                    "queryName": "dashboards/01f12cfac7f81329b2a109370a4528b0/datasets/01f12cfac7f81428bbd26d39f9ebc75b_day_of_week"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 12,
+            "height": 1
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ]
+}
