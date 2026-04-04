@@ -1,0 +1,51 @@
+school_id,name,district,state,school_type,grade_range,student_capacity
+7ea91de7-edca-4dd7-8567-713bd0c7e6d0,Green Academy,Springfield Unified School District,WV,charter,PreK-K,164
+3d6d7dd6-fe7e-479a-afb8-d35862e3fe7f,Rodriguez Academy,Jackson Unified School District,CO,head_start,PreK-K,65
+ef06a233-254a-4212-bc4d-4c981116338d,Garcia Elementary,Greenville Unified School District,NC,public,K-6,151
+409978d4-7def-4d4b-83ce-75fa2a3bff94,Rivera Prep,Dover Unified School District,IA,head_start,K-6,192
+1cd4a5dd-e438-4e95-96e4-3c463bae06a7,Smith Elementary,Dover Unified School District,MI,charter,PreK-K,160
+a5bd2773-6ae1-45f6-85a7-89fa8e70e117,Carter Learning Center,Madison Unified School District,CO,head_start,PreK-K,233
+cc69d542-de0a-488a-8cea-59b4669368d3,Thompson Prep,Bristol Unified School District,AZ,head_start,K-6,113
+7ec49931-9e42-4f30-8490-b24bceee7862,Harris Academy,Jackson Unified School District,ME,charter,K-6,148
+dec0d1c2-3afd-42dc-b41c-f3ad5d5b9b24,Rivera Academy,Riverside Unified School District,TX,private,PreK-3,90
+19c726c8-fcb4-4a36-87dc-1d5bad0faf47,Anderson Academy,Chester Unified School District,LA,head_start,K-6,477
+677ebdf9-ced9-4d4a-8a2f-6b589b2097f1,White Elementary,Burlington Unified School District,MN,private,K-6,186
+549a30d9-553b-4506-a689-172079c7116b,Hall Academy,Lakewood Unified School District,SD,private,K-6,423
+3d4b41e3-0641-4c4d-90cc-150d0b9cc0f9,Thomas Elementary,Easton Unified School District,MO,charter,K-6,402
+7f5d47f9-3864-4644-8f8a-4ac8e373e22f,Scott Elementary,Arlington Unified School District,WY,public,PreK-K,470
+bcab8575-2c79-4e87-b156-b78148a98ed8,Williams Learning Center,Chester Unified School District,LA,public,PreK-K,340
+9c754117-bfe4-40a9-bfb1-097fc1c520df,Rivera Learning Center,Clinton Unified School District,TN,head_start,PreK-3,379
+e90fd1a6-c3e6-4489-ba3c-bab83e479e34,Robinson Elementary,Bristol Unified School District,FL,private,K-6,337
+f277f27b-bb46-4f44-a66e-776fc94dfb1d,Wright Learning Center,Kingston Unified School District,NV,head_start,PreK-3,162
+7b9e1d75-0e5e-45b4-b563-e22f77fe40b5,Rodriguez Prep,Freeport Unified School District,CO,public,PreK-K,128
+4d436791-1c24-4038-9be1-6a252a5d08a1,Green Elementary,Dover Unified School District,RI,public,PreK-3,245
+1931b905-8265-481f-8999-bcf320f65f54,Hill School,Hampton Unified School District,KY,public,K-6,419
+8423edca-d258-48f3-8540-284c69d815f2,Davis Prep,Bristol Unified School District,WY,charter,PreK-K,200
+3efefdf8-9308-4f31-a290-d9e04fd3b172,Ramirez Elementary,Easton Unified School District,AL,charter,K-6,440
+67894daf-2798-473f-a133-34509c85a5b2,Lopez Prep,Madison Unified School District,SD,charter,K-6,309
+8b902c90-6686-47cd-ad47-fa5721327dd2,Hill Elementary,Georgetown Unified School District,MS,private,K-6,448
+770836c9-49fe-4be4-9a0e-1643d77c750e,King Academy,Lakewood Unified School District,MA,head_start,PreK-K,107
+961f8a8c-7080-469b-b989-ff844d396f26,White Learning Center,Greenville Unified School District,AR,private,K-6,90
+8f578f11-a663-41a3-ac1c-ca779cab1f35,Garcia School,Fairview Unified School District,WI,private,PreK-K,387
+54efc792-15e8-4edf-b463-c3fb0cffef14,Walker Prep,Franklin Unified School District,KY,head_start,PreK-K,326
+24362bd7-c875-4bb6-a444-3404a681b2a7,Carter Elementary,Oxford Unified School District,MT,charter,PreK-3,314
+ed6bec0a-d128-4e2e-9194-a5f5ecdcd12e,Lewis Academy,Greenville Unified School District,IA,public,PreK-3,60
+36e20eff-d78a-49dd-aa53-f1238ee345c0,Nguyen Prep,Greenville Unified School District,PA,private,PreK-K,86
+4dc45fc6-fadb-4868-9f4e-cddd631c7abe,Rivera Academy,Greenville Unified School District,CA,public,PreK-3,86
+636b8ce6-96c0-452b-ab0a-e739dcb68a8c,Allen Elementary,Bristol Unified School District,TX,head_start,PreK-K,326
+19d4685d-44dd-459b-b1b7-d29030de23be,Rodriguez Prep,Kingston Unified School District,NM,private,PreK-3,463
+9c753fbb-87d9-4088-a5d8-1d94279cfd36,Clark Elementary,Madison Unified School District,CT,head_start,PreK-3,266
+7caa99e5-aa2f-43f6-93ad-68f80ce21053,Clark School,Riverside Unified School District,UT,public,PreK-K,256
+05fbd2e8-928a-483e-a3c2-083bd8655429,Campbell Learning Center,Madison Unified School District,KS,private,PreK-K,324
+51ab44f2-0841-44b8-bc76-8d2344501e8e,Lewis Elementary,Dover Unified School District,ID,charter,PreK-3,177
+459f7de6-735d-4a35-b8ca-f662c20126fc,Jones School,Jackson Unified School District,CT,public,K-6,326
+6f8dac0a-5e74-4b21-8bc0-8791b5e21e65,Smith Academy,Greenville Unified School District,HI,head_start,PreK-3,296
+0c93e27c-c545-4f5f-bcfc-f771640959e3,Wilson School,Riverside Unified School District,HI,head_start,PreK-K,249
+c6e42cb4-e6de-4841-86c7-fe00bd66bd5b,Taylor School,Oxford Unified School District,NV,head_start,PreK-K,147
+93872cf9-e8d8-49c1-b44a-bcb8d09e69b7,Jackson Elementary,Riverside Unified School District,PA,public,K-6,210
+1a67d9b4-5cf8-4aaf-a3de-d79d96c91528,Brown Academy,Kingston Unified School District,NM,private,PreK-K,310
+fe2924e5-1a4a-43e5-9246-c0da1ec98a8a,Garcia Elementary,Fairview Unified School District,RI,public,K-6,491
+8b4d8304-db30-440d-9d10-d462d5332003,Thomas School,Madison Unified School District,OR,private,K-6,354
+4ee9a5c1-bd82-4668-84fd-271673c58244,Williams Prep,Fairview Unified School District,NE,charter,PreK-3,154
+a19de5b5-7532-4976-b51c-f1e4d45c4761,Nelson Learning Center,Greenville Unified School District,KY,head_start,PreK-K,393
+b9772d10-67bf-4262-9d92-9cc00f8e27dc,Adams Learning Center,Easton Unified School District,MA,public,PreK-K,284

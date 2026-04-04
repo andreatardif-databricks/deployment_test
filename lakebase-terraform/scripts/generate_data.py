@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-"""Generate synthetic Teaching Strategies education domain data using Faker."""
+"""Generate synthetic Teaching Strategies education domain data (stdlib only)."""
 
 import csv
-import os
 import random
+import string
 import uuid
 from datetime import date, timedelta
 from pathlib import Path
 
-from faker import Faker
-
-fake = Faker()
-Faker.seed(42)
 random.seed(42)
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -32,7 +28,6 @@ EDUCATOR_ROLES = ["lead_teacher", "assistant", "specialist", "administrator"]
 CERTIFICATIONS = ["early_childhood", "elementary", "special_ed", "ESL"]
 PROGRAM_TYPES = ["general", "montessori", "bilingual", "STEM"]
 SUBJECTS = ["literacy", "math", "social_emotional", "science", "physical"]
-ASSESSMENT_PERIODS = ["fall", "winter", "spring"]
 STUDENT_STATUSES = ["active", "inactive", "transferred"]
 EDUCATOR_STATUSES = ["active", "on_leave", "retired"]
 
@@ -50,9 +45,73 @@ CLASSROOM_NAMES = [
     "Hummingbirds", "Acorns", "Dragonflies", "Penguins", "Cubs",
 ]
 
+FIRST_NAMES = [
+    "Emma", "Liam", "Olivia", "Noah", "Ava", "Elijah", "Sophia", "James",
+    "Isabella", "William", "Mia", "Benjamin", "Charlotte", "Lucas", "Amelia",
+    "Henry", "Harper", "Alexander", "Evelyn", "Mason", "Luna", "Ethan",
+    "Camila", "Daniel", "Gianna", "Michael", "Abigail", "Sebastian", "Ella",
+    "Jack", "Aria", "Owen", "Scarlett", "Theodore", "Penelope", "Aiden",
+    "Layla", "Samuel", "Chloe", "Ryan", "Victoria", "Leo", "Madison",
+    "Thomas", "Eleanor", "Jackson", "Grace", "Logan", "Nora", "Caleb",
+]
+
+LAST_NAMES = [
+    "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller",
+    "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez",
+    "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin",
+    "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark",
+    "Ramirez", "Lewis", "Robinson", "Walker", "Young", "Allen", "King",
+    "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores", "Green",
+    "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell",
+    "Carter", "Roberts",
+]
+
+CITIES = [
+    "Springfield", "Riverside", "Fairview", "Madison", "Georgetown",
+    "Franklin", "Clinton", "Greenville", "Bristol", "Oxford",
+    "Arlington", "Burlington", "Chester", "Dover", "Easton",
+    "Freeport", "Hampton", "Jackson", "Kingston", "Lakewood",
+]
+
+STATES = [
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+    "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+    "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+    "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+    "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+]
+
+SCHOOL_SUFFIXES = ["Academy", "Elementary", "Learning Center", "School", "Prep"]
+
+SENTENCES = [
+    "Student showed strong engagement during the assessment.",
+    "Demonstrated improvement from the previous period.",
+    "Needs additional support with foundational concepts.",
+    "Excellent progress in peer collaboration activities.",
+    "Shows creative problem-solving approaches.",
+    "Consistent performance across multiple attempts.",
+    "Responded well to scaffolded instruction.",
+    "Demonstrates age-appropriate skill development.",
+    "Making steady progress toward learning objectives.",
+    "Shows enthusiasm for hands-on learning activities.",
+]
+
+_email_counter = 0
+
+
+def _random_date(start_date: date, end_date: date) -> date:
+    delta = (end_date - start_date).days
+    return start_date + timedelta(days=random.randint(0, max(0, delta)))
+
+
+def _random_email(first: str, last: str) -> str:
+    global _email_counter
+    _email_counter += 1
+    domain = random.choice(["example.com", "school.edu", "education.org"])
+    return f"{first.lower()}.{last.lower()}{_email_counter}@{domain}"
+
 
 def write_csv(filename: str, rows: list[dict]) -> None:
-    """Write rows to a CSV file in the data directory."""
     filepath = DATA_DIR / filename
     if not rows:
         return
@@ -60,7 +119,7 @@ def write_csv(filename: str, rows: list[dict]) -> None:
         writer = csv.DictWriter(f, fieldnames=rows[0].keys())
         writer.writeheader()
         writer.writerows(rows)
-    print(f"  Generated {len(rows):,} rows → {filepath}")
+    print(f"  Generated {len(rows):,} rows -> {filepath}")
 
 
 def generate_schools() -> list[dict]:
@@ -68,9 +127,9 @@ def generate_schools() -> list[dict]:
     for _ in range(NUM_SCHOOLS):
         rows.append({
             "school_id": str(uuid.uuid4()),
-            "name": f"{fake.last_name()} {random.choice(['Academy', 'Elementary', 'Learning Center', 'School', 'Prep'])}",
-            "district": f"{fake.city()} Unified School District",
-            "state": fake.state_abbr(),
+            "name": f"{random.choice(LAST_NAMES)} {random.choice(SCHOOL_SUFFIXES)}",
+            "district": f"{random.choice(CITIES)} Unified School District",
+            "state": random.choice(STATES),
             "school_type": random.choice(SCHOOL_TYPES),
             "grade_range": random.choice(GRADE_RANGES),
             "student_capacity": random.randint(50, 500),
@@ -81,12 +140,15 @@ def generate_schools() -> list[dict]:
 def generate_educators(schools: list[dict]) -> list[dict]:
     rows = []
     for _ in range(NUM_EDUCATORS):
-        hire_date = fake.date_between(start_date="-10y", end_date="today")
+        today = date.today()
+        hire_date = _random_date(today - timedelta(days=3650), today)
+        first = random.choice(FIRST_NAMES)
+        last = random.choice(LAST_NAMES)
         rows.append({
             "educator_id": str(uuid.uuid4()),
-            "first_name": fake.first_name(),
-            "last_name": fake.last_name(),
-            "email": fake.unique.email(),
+            "first_name": first,
+            "last_name": last,
+            "email": _random_email(first, last),
             "role": random.choice(EDUCATOR_ROLES),
             "certification": random.choice(CERTIFICATIONS),
             "school_id": random.choice(schools)["school_id"],
@@ -118,15 +180,16 @@ def generate_classrooms(schools: list[dict], educators: list[dict]) -> list[dict
 
 def generate_students(schools: list[dict], classrooms: list[dict]) -> list[dict]:
     rows = []
+    today = date.today()
     for _ in range(NUM_STUDENTS):
         classroom = random.choice(classrooms)
         age_years = random.randint(3, 12)
-        dob = date.today() - timedelta(days=age_years * 365 + random.randint(0, 364))
-        enrollment_date = fake.date_between(start_date="-3y", end_date="today")
+        dob = today - timedelta(days=age_years * 365 + random.randint(0, 364))
+        enrollment_date = _random_date(today - timedelta(days=1095), today)
         rows.append({
             "student_id": str(uuid.uuid4()),
-            "first_name": fake.first_name(),
-            "last_name": fake.last_name(),
+            "first_name": random.choice(FIRST_NAMES),
+            "last_name": random.choice(LAST_NAMES),
             "date_of_birth": dob.isoformat(),
             "grade_level": classroom["grade_level"],
             "school_id": classroom["school_id"],
@@ -162,11 +225,12 @@ def generate_assessments(
     learning_objectives: list[dict],
 ) -> list[dict]:
     rows = []
+    today = date.today()
     for _ in range(NUM_ASSESSMENTS):
         student = random.choice(students)
         educator = random.choice(educators)
         objective = random.choice(learning_objectives)
-        assessment_date = fake.date_between(start_date="-2y", end_date="today")
+        assessment_date = _random_date(today - timedelta(days=730), today)
         month = assessment_date.month
         if month <= 3:
             period = "winter"
@@ -184,7 +248,7 @@ def generate_assessments(
             "assessment_date": assessment_date.isoformat(),
             "assessment_period": period,
             "learning_objective_id": objective["objective_id"],
-            "notes": fake.sentence() if random.random() < 0.3 else "",
+            "notes": random.choice(SENTENCES) if random.random() < 0.3 else "",
         })
     return rows
 
