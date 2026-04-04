@@ -134,3 +134,18 @@ bash scripts/create_lakebase_catalog.sh --delete <workspace_url> teaching_strate
 - **REST API**: Lakebase Postgres catalog, synced tables, project ACLs, Postgres role grants
 
 REST API fallback is needed because the Terraform provider doesn't yet support Lakebase Autoscaling catalogs or synced tables.
+
+## Interactive Architecture Diagram
+
+An interactive HTML diagram documenting every resource, its tooling layer, configuration, and data flow is available at:
+
+```
+diagram/architecture.html
+```
+
+Open it directly in any browser (no server required). Features:
+- **Click any node** to see Terraform resource type, configuration parameters, and upstream/downstream dependencies
+- **Color-coded by tooling**: Terraform (blue), SDK (green), REST API (purple), Script (gray)
+- **Search** to find resources by name, type, or description
+- **Filter** by tooling type using the header buttons
+- **Collapsible layers** to focus on specific architecture tiers

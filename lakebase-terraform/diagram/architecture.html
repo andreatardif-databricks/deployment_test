@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lakebase Terraform — Architecture & Tooling Overview</title>
+<style>
+  :root {
+    --navy: #1b3a4b;
+    --navy-light: #2a5470;
+    --red-orange: #ff6240;
+    --orange: #ff8c42;
+    --white: #ffffff;
+    --off-white: #f4f5f7;
+    --gray-100: #e8eaed;
+    --gray-200: #d2d5da;
+    --gray-400: #8b919a;
+    --gray-600: #5a6068;
+    --blue-tf: #4a90d9;
+    --blue-tf-bg: rgba(74,144,217,0.08);
+    --green-sdk: #2ecc71;
+    --green-sdk-bg: rgba(46,204,113,0.08);
+    --gray-manual: #8b919a;
+    --gray-manual-bg: rgba(139,145,154,0.08);
+    --purple-rest: #9b59b6;
+    --purple-rest-bg: rgba(155,89,182,0.08);
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-hover: 0 4px 24px rgba(0,0,0,0.14);
+    --radius: 10px;
+    --transition: all 0.25s ease;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--off-white);
+    color: var(--navy);
+    line-height: 1.5;
+  }
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+    color: var(--white);
+    padding: 28px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  header .subtitle { font-size: 13px; opacity: 0.7; font-weight: 400; }
+  .controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .controls input {
+    padding: 7px 14px;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    font-size: 13px;
+    width: 200px;
+    outline: none;
+    transition: var(--transition);
+  }
+  .controls input::placeholder { color: rgba(255,255,255,0.5); }
+  .controls input:focus { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.15); }
+  .filter-btn {
+    padding: 6px 14px;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 6px;
+    background: transparent;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-weight: 500;
+  }
+  .filter-btn:hover { background: rgba(255,255,255,0.1); }
+  .filter-btn.active { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); }
+  .legend {
+    display: flex;
+    gap: 20px;
+    padding: 12px 40px;
+    background: white;
+    border-bottom: 1px solid var(--gray-100);
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .legend-title { font-size: 12px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.5px; }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--gray-600);
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .main { padding: 24px 40px; max-width: 1400px; margin: 0 auto; }
+  .layer {
+    margin-bottom: 16px;
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: var(--transition);
+  }
+  .layer.collapsed .layer-body { display: none; }
+  .layer-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--gray-100);
+    transition: var(--transition);
+  }
+  .layer-header:hover { background: var(--off-white); }
+  .layer.collapsed .layer-header { border-bottom: none; }
+  .layer-chevron {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+    color: var(--gray-400);
+  }
+  .layer.collapsed .layer-chevron { transform: rotate(-90deg); }
+  .layer-title { font-size: 14px; font-weight: 600; }
+  .layer-count {
+    font-size: 11px;
+    color: var(--gray-400);
+    background: var(--gray-100);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+  .layer-body { padding: 16px 20px; }
+  .nodes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .node {
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    background: white;
+  }
+  .node:hover { box-shadow: var(--shadow-hover); transform: translateY(-1px); }
+  .node.highlight { border-color: var(--red-orange); box-shadow: 0 0 0 2px rgba(255,98,64,0.2); }
+  .node.dimmed { opacity: 0.3; }
+  .node-tool {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 8px 8px 0 0;
+  }
+  .node-tool.terraform { background: var(--blue-tf); }
+  .node-tool.sdk { background: var(--green-sdk); }
+  .node-tool.manual { background: var(--gray-manual); }
+  .node-tool.rest-api { background: var(--purple-rest); }
+  .node-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .node-icon { font-size: 18px; flex-shrink: 0; }
+  .node-name { font-size: 13px; font-weight: 600; color: var(--navy); }
+  .node-type { font-size: 11px; color: var(--gray-400); font-family: 'SF Mono', 'Fira Code', monospace; }
+  .node-desc { font-size: 12px; color: var(--gray-600); margin-top: 4px; }
+  .node-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .badge-tf { background: var(--blue-tf-bg); color: var(--blue-tf); }
+  .badge-sdk { background: var(--green-sdk-bg); color: var(--green-sdk); }
+  .badge-manual { background: var(--gray-manual-bg); color: var(--gray-manual); }
+  .badge-rest { background: var(--purple-rest-bg); color: var(--purple-rest); }
+
+  /* Flow arrows between layers */
+  .flow-arrow {
+    display: flex;
+    justify-content: center;
+    padding: 4px 0;
+    color: var(--gray-200);
+  }
+  .flow-arrow svg { width: 24px; height: 24px; }
+
+  /* Detail panel */
+  .detail-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(27,58,75,0.4);
+    z-index: 100;
+    backdrop-filter: blur(2px);
+  }
+  .detail-overlay.open { display: flex; align-items: center; justify-content: center; }
+  .detail-panel {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    max-width: 560px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideUp 0.2s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .detail-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--gray-100);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .detail-header h2 { font-size: 16px; font-weight: 600; }
+  .detail-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--gray-400);
+    padding: 0 4px;
+    line-height: 1;
+  }
+  .detail-close:hover { color: var(--navy); }
+  .detail-body { padding: 20px 24px; }
+  .detail-section { margin-bottom: 16px; }
+  .detail-section:last-child { margin-bottom: 0; }
+  .detail-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .detail-value { font-size: 13px; color: var(--navy); }
+  .detail-value code {
+    background: var(--off-white);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .detail-deps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .dep-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: var(--off-white);
+    border-radius: 4px;
+    color: var(--gray-600);
+  }
+  .dep-tag.upstream { border-left: 2px solid var(--blue-tf); }
+  .dep-tag.downstream { border-left: 2px solid var(--red-orange); }
+  .detail-config {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    background: var(--off-white);
+    padding: 10px 14px;
+    border-radius: 6px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--navy);
+    line-height: 1.6;
+  }
+
+  footer {
+    text-align: center;
+    padding: 24px 40px;
+    font-size: 12px;
+    color: var(--gray-400);
+    border-top: 1px solid var(--gray-100);
+    margin-top: 20px;
+  }
+
+  @media (max-width: 768px) {
+    header { padding: 20px; }
+    .main { padding: 16px; }
+    .legend { padding: 12px 16px; gap: 12px; }
+    .nodes { grid-template-columns: 1fr; }
+    header h1 { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Lakebase Terraform — Architecture & Tooling Overview</h1>
+    <div class="subtitle">Teaching Strategies Education Domain &bull; Serverless Workspace &bull; us-east-2</div>
+  </div>
+  <div class="controls">
+    <input type="text" id="search" placeholder="Search resources..." />
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="terraform">Terraform</button>
+    <button class="filter-btn" data-filter="sdk">SDK / CLI</button>
+    <button class="filter-btn" data-filter="rest-api">REST API</button>
+    <button class="filter-btn" data-filter="manual">Script</button>
+  </div>
+</header>
+
+<div class="legend">
+  <span class="legend-title">Tooling</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--blue-tf)"></span> Terraform Provider</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--green-sdk)"></span> Databricks SDK</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--purple-rest)"></span> REST API (null_resource)</span>
+  <span class="legend-item"><span class="legend-dot" style="background:var(--gray-manual)"></span> Python Script</span>
+</div>
+
+<div class="main" id="layers"></div>
+
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-panel" id="detailPanel"></div>
+</div>
+
+<footer>
+  Generated 2026-04-03 &bull; Generated by Databricks DSA Engagement &bull; Workspace: dbc-a3e7ef88-801c.cloud.databricks.com
+</footer>
+
+<script>
+const ARCH = [
+  {
+    id: "data-sources", title: "Layer 1 — Data Sources", icon: "📊",
+    nodes: [
+      {
+        id: "faker-gen", name: "Synthetic Data Generator", icon: "🐍",
+        tool: "manual", badge: "Python Script",
+        type: "scripts/generate_data.py",
+        desc: "Generates 7,000 rows across 6 education domain entities using Python stdlib (Faker-compatible, no external deps)",
+        config: "Entities:\n  schools:              50 rows\n  educators:           200 rows\n  classrooms:          150 rows\n  students:          1,500 rows\n  learning_objectives: 100 rows\n  assessments:       5,000 rows\n\nOutput: lakebase-terraform/data/*.csv\nSeed: 42 (deterministic)",
+        upstream: [],
+        downstream: ["volume-upload"]
+      }
+    ]
+  },
+  {
+    id: "infrastructure", title: "Layer 2 — Infrastructure", icon: "🏗️",
+    nodes: [
+      {
+        id: "workspace", name: "Serverless Workspace", icon: "☁️",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_mws_workspaces",
+        desc: "Serverless AWS workspace in us-east-2 — no VPC, no credentials needed",
+        config: "workspace_name = \"lakebase-terraform-ws\"\naws_region     = \"us-east-2\"\ncompute_mode   = \"SERVERLESS\"\naccount_id     = \"0d26daa6-...\"\n\nURL: https://dbc-a3e7ef88-801c.cloud.databricks.com\nID:  7474646922738859",
+        upstream: [],
+        downstream: ["metastore-assign", "service-principal", "catalog"]
+      },
+      {
+        id: "metastore-assign", name: "Metastore Assignment", icon: "🗄️",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_metastore_assignment",
+        desc: "Assigns metastore-dev-us-east-2 to the workspace (has S3 root storage)",
+        config: "workspace_id = 7474646922738859\nmetastore_id = \"4dd5ed5e-86ab-4536-8404-e8d5320d143b\"\nmetastore    = \"metastore-dev-us-east-2\"\nregion       = \"us-east-2\"",
+        upstream: ["workspace"],
+        downstream: ["catalog"]
+      },
+      {
+        id: "service-principal", name: "Service Principal", icon: "🤖",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_service_principal",
+        desc: "Identity for automated pipeline and Lakebase operations",
+        config: "display_name   = \"lakebase-terraform-sp\"\nactive         = true\napplication_id = \"40c7212c-8066-406c-a335-1dcb0065ba01\"",
+        upstream: ["workspace"],
+        downstream: ["grants-catalog", "grants-schemas", "lakebase-perms"]
+      },
+      {
+        id: "time-sleep", name: "Workspace Ready Gate", icon: "⏱️",
+        tool: "terraform", badge: "Terraform",
+        type: "time_sleep",
+        desc: "120-second delay ensuring workspace is fully provisioned before downstream resources",
+        config: "create_duration = \"120s\"\ndepends_on      = [databricks_mws_workspaces.this]",
+        upstream: ["workspace"],
+        downstream: ["metastore-assign", "service-principal"]
+      }
+    ]
+  },
+  {
+    id: "storage", title: "Layer 3 — Unity Catalog Storage", icon: "📦",
+    nodes: [
+      {
+        id: "catalog", name: "teaching_strategies", icon: "📁",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_catalog",
+        desc: "Unity Catalog catalog for all Delta tables — Bronze, Silver, and Gold schemas",
+        config: "name    = \"teaching_strategies\"\ncomment = \"Teaching Strategies education domain data\"\ntype    = MANAGED_CATALOG",
+        upstream: ["metastore-assign"],
+        downstream: ["schema-bronze", "schema-silver", "schema-gold"]
+      },
+      {
+        id: "schema-bronze", name: "bronze", icon: "🥉",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_schema",
+        desc: "Raw ingestion layer — CSV data loaded as-is with ingestion metadata",
+        config: "catalog_name = \"teaching_strategies\"\nname         = \"bronze\"\ncomment      = \"Raw ingestion layer\"\n\nTables:\n  bronze_schools, bronze_educators,\n  bronze_classrooms, bronze_students,\n  bronze_assessments, bronze_learning_objectives",
+        upstream: ["catalog"],
+        downstream: ["volume", "pipeline-bronze"]
+      },
+      {
+        id: "schema-silver", name: "silver", icon: "🥈",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_schema",
+        desc: "Cleaned and deduplicated data — typed, validated, with processing metadata",
+        config: "catalog_name = \"teaching_strategies\"\nname         = \"silver\"\ncomment      = \"Cleaned and deduplicated data\"\n\nTables:\n  silver_schools, silver_educators,\n  silver_classrooms, silver_students,\n  silver_assessments, silver_learning_objectives",
+        upstream: ["catalog"],
+        downstream: ["pipeline-silver"]
+      },
+      {
+        id: "schema-gold", name: "gold", icon: "🥇",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_schema",
+        desc: "Business-ready aggregations — summary tables for analytics and serving",
+        config: "catalog_name = \"teaching_strategies\"\nname         = \"gold\"\ncomment      = \"Business-ready aggregations\"\n\nTables:\n  assessment_summary_by_classroom\n  educator_performance_metrics\n  school_performance_overview",
+        upstream: ["catalog"],
+        downstream: ["pipeline-gold", "sync-assessment", "sync-educator", "sync-school"]
+      },
+      {
+        id: "volume", name: "raw_data (Volume)", icon: "💾",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_volume",
+        desc: "Managed Unity Catalog Volume for raw CSV data landing zone",
+        config: "catalog_name = \"teaching_strategies\"\nschema_name  = \"bronze\"\nname         = \"raw_data\"\nvolume_type  = \"MANAGED\"\n\nPath: /Volumes/teaching_strategies/bronze/raw_data/\nFiles: 6 CSVs (7,000 total rows)",
+        upstream: ["schema-bronze"],
+        downstream: ["volume-upload"]
+      },
+      {
+        id: "volume-upload", name: "CSV Upload to Volume", icon: "📤",
+        tool: "manual", badge: "Script",
+        type: "null_resource + databricks fs cp",
+        desc: "Uploads 6 generated CSV files from local data/ directory to the UC Volume",
+        config: "command: databricks fs cp ./data/*.csv\n  dbfs:/Volumes/teaching_strategies/bronze/raw_data/\n  --overwrite --profile lakebase-terraform-ws\n\nFiles uploaded:\n  schools.csv, educators.csv, classrooms.csv,\n  students.csv, assessments.csv,\n  learning_objectives.csv",
+        upstream: ["faker-gen", "volume"],
+        downstream: ["pipeline-bronze"]
+      }
+    ]
+  },
+  {
+    id: "processing", title: "Layer 4 — SDP Pipeline Processing", icon: "⚙️",
+    nodes: [
+      {
+        id: "notebook", name: "Pipeline Notebook", icon: "📓",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_notebook",
+        desc: "Python notebook with DLT table definitions for all 3 layers",
+        config: "path     = \"/Shared/teaching_strategies/\n           teaching_strategies_pipeline\"\nlanguage = \"PYTHON\"\n\nDefines: 15 DLT tables\n  Bronze: 6 (raw CSV read + metadata)\n  Silver: 6 (dedup, type cast, validate)\n  Gold:   3 (aggregated summaries)",
+        upstream: [],
+        downstream: ["pipeline"]
+      },
+      {
+        id: "pipeline", name: "teaching_strategies_pipeline", icon: "🔄",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_pipeline",
+        desc: "Serverless Spark Declarative Pipeline — Bronze / Silver / Gold",
+        config: "name       = \"teaching_strategies_pipeline\"\nserverless = true\ncatalog    = \"teaching_strategies\"\nschema     = \"gold\"\n\nWrites to 3 schemas using qualified names:\n  bronze.bronze_*\n  silver.silver_*\n  gold.*",
+        upstream: ["notebook", "volume-upload"],
+        downstream: ["pipeline-bronze"]
+      },
+      {
+        id: "pipeline-bronze", name: "Bronze Stage", icon: "🥉",
+        tool: "terraform", badge: "Terraform",
+        type: "dlt.table (6 tables)",
+        desc: "Raw CSV ingestion with _ingested_at and _source_file metadata columns",
+        config: "Tables: bronze.bronze_schools,\n  bronze.bronze_educators,\n  bronze.bronze_classrooms,\n  bronze.bronze_students,\n  bronze.bronze_assessments,\n  bronze.bronze_learning_objectives\n\nTransform:\n  spark.read.csv(VOLUME_PATH)\n  + _ingested_at (current_timestamp)\n  + _source_file (lit volume path)",
+        upstream: ["pipeline", "volume-upload"],
+        downstream: ["pipeline-silver"]
+      },
+      {
+        id: "pipeline-silver", name: "Silver Stage", icon: "🥈",
+        tool: "terraform", badge: "Terraform",
+        type: "dlt.table (6 tables)",
+        desc: "Cleaned, deduped, typed — with expect_or_drop data quality constraints",
+        config: "Tables: silver.silver_schools,\n  silver.silver_educators, ...\n\nTransforms:\n  dropDuplicates([natural_key])\n  cast types (DateType, IntegerType, ...)\n  expect_or_drop(\"valid_*_id\", \"* IS NOT NULL\")\n  + _processed_at (current_timestamp)",
+        upstream: ["pipeline-bronze"],
+        downstream: ["pipeline-gold"]
+      },
+      {
+        id: "pipeline-gold", name: "Gold Stage", icon: "🥇",
+        tool: "terraform", badge: "Terraform",
+        type: "dlt.table (3 tables)",
+        desc: "Aggregated business-ready tables — joins across silver entities",
+        config: "Tables:\n  gold.assessment_summary_by_classroom\n    GROUP BY classroom, subject, period\n    AVG/MIN/MAX/STDDEV(score)\n\n  gold.educator_performance_metrics\n    GROUP BY educator\n    COUNT students, AVG score\n\n  gold.school_performance_overview\n    GROUP BY school\n    COUNT students/educators/classrooms",
+        upstream: ["pipeline-silver"],
+        downstream: ["sync-assessment", "sync-educator", "sync-school"]
+      }
+    ]
+  },
+  {
+    id: "serving", title: "Layer 5 — Lakebase Postgres Serving", icon: "🐘",
+    nodes: [
+      {
+        id: "lakebase-project", name: "teaching-strategies-project", icon: "📦",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_postgres_project",
+        desc: "Lakebase Autoscaling project — Postgres 17, auto-scaling compute",
+        config: "project_id   = \"teaching-strategies-project\"\npg_version   = 17\ndisplay_name = \"Teaching Strategies Lakebase\"\n\nDefault Endpoint Settings:\n  min_cu = 0.5, max_cu = 4.0\n  suspend_timeout = 300s (5 min)\n\nUID: d1f29f25-09fd-4e68-9d9d-f3610f8d0ca9",
+        upstream: ["workspace"],
+        downstream: ["branch-prod", "branch-dev"]
+      },
+      {
+        id: "branch-prod", name: "production (branch)", icon: "🏭",
+        tool: "terraform", badge: "Terraform",
+        type: "Auto-created with project",
+        desc: "Default protected branch — production workload endpoint",
+        config: "branch   = \"production\" (auto-created)\ndefault  = true\nendpoint = ep-rapid-term-d88lsp6h\n           .database.us-east-2\n           .cloud.databricks.com\n\nUID: br-purple-wave-d83fzppu",
+        upstream: ["lakebase-project"],
+        downstream: ["lakebase-catalog", "sync-assessment"]
+      },
+      {
+        id: "branch-dev", name: "development (branch)", icon: "🔧",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_postgres_branch",
+        desc: "Development branch — 7-day TTL, copy-on-write from production",
+        config: "branch_id = \"development\"\nparent    = \"projects/teaching-strategies-project\"\nttl       = \"604800s\" (7 days)\n\nendpoint = ep-fragrant-fire-d8gwiqh9\n           .database.us-east-2\n           .cloud.databricks.com\n\nUID: br-dark-block-d8i7zm4q",
+        upstream: ["lakebase-project"],
+        downstream: []
+      },
+      {
+        id: "lakebase-catalog", name: "teaching_strategies_lakebase", icon: "🗃️",
+        tool: "rest-api", badge: "REST API",
+        type: "POST /api/2.0/postgres/catalogs",
+        desc: "Lakebase Postgres UC Catalog (MANAGED_ONLINE_CATALOG) — proper Lakebase type",
+        config: "catalog_id     = \"teaching_strategies_lakebase\"\ncatalog_type   = MANAGED_ONLINE_CATALOG\n\nLinked to:\n  project = teaching-strategies-project\n  branch  = production\n  database = databricks_postgres\n\nCreated via: w.postgres.create_catalog\n  (REST API — SDK 0.102 lacks method)",
+        upstream: ["branch-prod"],
+        downstream: ["sync-assessment", "sync-educator", "sync-school"]
+      },
+      {
+        id: "sync-assessment", name: "assessment_summary synced", icon: "🔗",
+        tool: "sdk", badge: "SDK",
+        type: "w.database.create_synced_database_table",
+        desc: "Syncs gold assessment summary to Lakebase Postgres (SNAPSHOT mode)",
+        config: "name   = \"teaching_strategies_lakebase\n         .public\n         .assessment_summary_by_classroom_synced\"\nsource = \"teaching_strategies.gold\n         .assessment_summary_by_classroom\"\n\nscheduling_policy = SNAPSHOT\nprimary_key_columns = [\n  \"classroom_id\", \"subject\",\n  \"assessment_period\"\n]\nStatus: ACTIVE / ONLINE",
+        upstream: ["pipeline-gold", "lakebase-catalog"],
+        downstream: []
+      },
+      {
+        id: "sync-educator", name: "educator_metrics synced", icon: "🔗",
+        tool: "sdk", badge: "SDK",
+        type: "w.database.create_synced_database_table",
+        desc: "Syncs gold educator metrics to Lakebase Postgres (SNAPSHOT mode)",
+        config: "name   = \"teaching_strategies_lakebase\n         .public\n         .educator_performance_metrics_synced\"\nsource = \"teaching_strategies.gold\n         .educator_performance_metrics\"\n\nscheduling_policy = SNAPSHOT\nprimary_key_columns = [\"educator_id\"]\nStatus: ACTIVE / ONLINE",
+        upstream: ["pipeline-gold", "lakebase-catalog"],
+        downstream: []
+      },
+      {
+        id: "sync-school", name: "school_overview synced", icon: "🔗",
+        tool: "sdk", badge: "SDK",
+        type: "w.database.create_synced_database_table",
+        desc: "Syncs gold school overview to Lakebase Postgres (SNAPSHOT mode)",
+        config: "name   = \"teaching_strategies_lakebase\n         .public\n         .school_performance_overview_synced\"\nsource = \"teaching_strategies.gold\n         .school_performance_overview\"\n\nscheduling_policy = SNAPSHOT\nprimary_key_columns = [\"school_id\"]\nStatus: ACTIVE / ONLINE",
+        upstream: ["pipeline-gold", "lakebase-catalog"],
+        downstream: []
+      }
+    ]
+  },
+  {
+    id: "access-control", title: "Layer 6 — Access Control", icon: "🔐",
+    nodes: [
+      {
+        id: "grants-catalog", name: "UC Catalog Grants", icon: "🔑",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_grants (catalog)",
+        desc: "Grants on teaching_strategies and teaching_strategies_lakebase catalogs",
+        config: "teaching_strategies:\n  lakebase-terraform-sp → ALL_PRIVILEGES\n  andrea.tardif@        → ALL_PRIVILEGES\n  lakebase-users        → USE_CATALOG\n\nteaching_strategies_lakebase:\n  lakebase-terraform-sp → ALL_PRIVILEGES\n  andrea.tardif@        → ALL_PRIVILEGES\n  lakebase-users        → USE_CATALOG",
+        upstream: ["catalog", "lakebase-catalog", "service-principal"],
+        downstream: []
+      },
+      {
+        id: "grants-schemas", name: "UC Schema & Volume Grants", icon: "🔑",
+        tool: "terraform", badge: "Terraform",
+        type: "databricks_grants (schema, volume)",
+        desc: "Per-schema and volume grants for all 3 identities",
+        config: "bronze / silver / gold schemas:\n  lakebase-terraform-sp → ALL_PRIVILEGES\n  andrea.tardif@        → ALL_PRIVILEGES\n  lakebase-users        → USE_SCHEMA, SELECT\n\nraw_data volume:\n  lakebase-terraform-sp → ALL_PRIVILEGES\n  andrea.tardif@        → ALL_PRIVILEGES\n  lakebase-users        → READ_VOLUME",
+        upstream: ["schema-bronze", "schema-silver", "schema-gold", "volume", "service-principal"],
+        downstream: []
+      },
+      {
+        id: "lakebase-perms", name: "Lakebase Project ACLs", icon: "🛡️",
+        tool: "rest-api", badge: "REST API",
+        type: "null_resource + manage_lakebase_perms.sh",
+        desc: "Project-level permissions via workspace ACL API",
+        config: "Project: teaching-strategies-project\n\n  lakebase-terraform-sp → CAN_MANAGE\n  andrea.tardif@        → CAN_MANAGE\n  lakebase-users        → CAN_USE\n\nPostgres Roles (branch-scoped):\n  Production:\n    SP + andrea.tardif → databricks_superuser\n    lakebase-users     → standard role\n  Development:\n    SP + andrea.tardif → databricks_superuser\n    lakebase-users     → databricks_superuser",
+        upstream: ["lakebase-project", "service-principal"],
+        downstream: []
+      },
+      {
+        id: "group", name: "lakebase-users (Group)", icon: "👥",
+        tool: "sdk", badge: "SDK",
+        type: "databricks account groups create",
+        desc: "Account-level group for read-access users — created via CLI (UC requires account groups)",
+        config: "display_name = \"lakebase-users\"\nlevel        = account\nid           = 86022807791662\n\nCreated via:\n  databricks account groups create\n  --display-name lakebase-users\n  --profile one-env-account",
+        upstream: [],
+        downstream: ["grants-catalog", "grants-schemas", "lakebase-perms"]
+      }
+    ]
+  }
+];
+
+// Render
+const main = document.getElementById('layers');
+const overlay = document.getElementById('detailOverlay');
+const panel = document.getElementById('detailPanel');
+
+function chevronSVG() {
+  return `<svg class="layer-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`;
+}
+function arrowSVG() {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`;
+}
+
+function renderLayers() {
+  main.innerHTML = '';
+  ARCH.forEach((layer, li) => {
+    const div = document.createElement('div');
+    div.className = 'layer';
+    div.dataset.layerId = layer.id;
+    div.innerHTML = `
+      <div class="layer-header" onclick="toggleLayer('${layer.id}')">
+        ${chevronSVG()}
+        <span style="font-size:16px">${layer.icon}</span>
+        <span class="layer-title">${layer.title}</span>
+        <span class="layer-count">${layer.nodes.length} resource${layer.nodes.length>1?'s':''}</span>
+      </div>
+      <div class="layer-body">
+        <div class="nodes">
+          ${layer.nodes.map(n => `
+            <div class="node" data-id="${n.id}" data-tool="${n.tool}" onclick="showDetail('${n.id}')">
+              <div class="node-tool ${n.tool}"></div>
+              <div class="node-header">
+                <span class="node-icon">${n.icon}</span>
+                <div>
+                  <div class="node-name">${n.name}</div>
+                  <div class="node-type">${n.type}</div>
+                </div>
+              </div>
+              <div class="node-desc">${n.desc}</div>
+              <span class="node-badge badge-${n.tool === 'rest-api' ? 'rest' : n.tool}">${n.badge}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    main.appendChild(div);
+    if (li < ARCH.length - 1) {
+      const arrow = document.createElement('div');
+      arrow.className = 'flow-arrow';
+      arrow.innerHTML = arrowSVG();
+      main.appendChild(arrow);
+    }
+  });
+}
+
+function toggleLayer(id) {
+  document.querySelector(`[data-layer-id="${id}"]`).classList.toggle('collapsed');
+}
+
+function findNode(id) {
+  for (const layer of ARCH) for (const n of layer.nodes) if (n.id === id) return n;
+  return null;
+}
+
+function showDetail(id) {
+  const n = findNode(id);
+  if (!n) return;
+  panel.innerHTML = `
+    <div class="detail-header">
+      <div>
+        <h2>${n.icon} ${n.name}</h2>
+        <span class="node-badge badge-${n.tool === 'rest-api' ? 'rest' : n.tool}" style="margin-top:6px">${n.badge}</span>
+      </div>
+      <button class="detail-close" onclick="closeDetail()">&times;</button>
+    </div>
+    <div class="detail-body">
+      <div class="detail-section">
+        <div class="detail-label">Resource Type</div>
+        <div class="detail-value"><code>${n.type}</code></div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Description</div>
+        <div class="detail-value">${n.desc}</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">Configuration</div>
+        <div class="detail-config">${n.config}</div>
+      </div>
+      ${n.upstream.length ? `
+        <div class="detail-section">
+          <div class="detail-label">Upstream Dependencies</div>
+          <div class="detail-deps">${n.upstream.map(u => {
+            const un = findNode(u);
+            return `<span class="dep-tag upstream" onclick="event.stopPropagation();showDetail('${u}')" style="cursor:pointer">${un ? un.name : u}</span>`;
+          }).join('')}</div>
+        </div>` : ''}
+      ${n.downstream.length ? `
+        <div class="detail-section">
+          <div class="detail-label">Downstream Consumers</div>
+          <div class="detail-deps">${n.downstream.map(d => {
+            const dn = findNode(d);
+            return `<span class="dep-tag downstream" onclick="event.stopPropagation();showDetail('${d}')" style="cursor:pointer">${dn ? dn.name : d}</span>`;
+          }).join('')}</div>
+        </div>` : ''}
+    </div>
+  `;
+  overlay.classList.add('open');
+}
+
+function closeDetail() { overlay.classList.remove('open'); }
+overlay.addEventListener('click', e => { if (e.target === overlay) closeDetail(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+// Search
+document.getElementById('search').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.node').forEach(el => {
+    const n = findNode(el.dataset.id);
+    if (!n) return;
+    const text = `${n.name} ${n.type} ${n.desc} ${n.tool} ${n.config}`.toLowerCase();
+    el.classList.toggle('dimmed', q && !text.includes(q));
+    el.classList.toggle('highlight', q && text.includes(q));
+  });
+});
+
+// Filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    const f = this.dataset.filter;
+    document.querySelectorAll('.node').forEach(el => {
+      el.classList.toggle('dimmed', f !== 'all' && el.dataset.tool !== f);
+      el.classList.remove('highlight');
+    });
+  });
+});
+
+renderLayers();
+</script>
+</body>
+</html>
