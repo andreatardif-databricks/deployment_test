@@ -5,7 +5,7 @@ output "project_name" {
 
 output "project_uid" {
   description = "Project UID (for REST API calls)"
-  value       = databricks_postgres_project.this.id
+  value       = databricks_postgres_project.this.uid
 }
 
 output "production_branch_uid" {
