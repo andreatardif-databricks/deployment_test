@@ -55,7 +55,7 @@ resource "null_resource" "upload_data" {
           filename=$(basename "$csv_file")
           databricks fs cp "$csv_file" \
             "dbfs:/Volumes/${var.catalog_name}/bronze/raw_data/$filename" \
-            --overwrite
+            --overwrite --profile ${var.workspace_profile}
         fi
       done
     EOT

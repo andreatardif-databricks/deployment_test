@@ -21,8 +21,9 @@ module "unity_catalog" {
     databricks = databricks.workspace
   }
 
-  catalog_name = var.catalog_name
-  data_dir     = "${path.root}/data"
+  catalog_name      = var.catalog_name
+  data_dir          = "${path.root}/data"
+  workspace_profile = var.workspace_profile
 
   depends_on = [module.workspace]
 }
@@ -67,7 +68,7 @@ module "sync" {
   lakebase_project_name = module.lakebase.project_name
   lakebase_project_uid  = module.lakebase.project_uid
   lakebase_branch_id    = module.lakebase.production_branch_uid
-  account_profile       = var.account_profile
+  account_profile       = var.workspace_profile
 
   depends_on = [module.pipeline, module.lakebase]
 }
@@ -87,7 +88,7 @@ module "permissions" {
   group_name            = var.group_name
   workspace_url         = module.workspace.workspace_url
   lakebase_project_name = module.lakebase.project_name
-  account_profile       = var.account_profile
+  account_profile       = var.workspace_profile
 
   depends_on = [module.sync]
 }

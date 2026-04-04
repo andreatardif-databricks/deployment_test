@@ -33,16 +33,11 @@ resource "databricks_postgres_branch" "development" {
   }
 }
 
-# Development endpoint
-resource "databricks_postgres_endpoint" "dev_primary" {
-  endpoint_id = "ep-dev-primary"
-  parent      = databricks_postgres_branch.development.name
-  spec = {
-    endpoint_type = "ENDPOINT_TYPE_READ_WRITE"
-  }
-}
-
-# Data sources to read auto-created production resources
+# Data sources to read auto-created endpoints (both branches get auto-created R/W endpoints)
 data "databricks_postgres_endpoints" "production" {
   parent = "${databricks_postgres_project.this.name}/branches/production"
+}
+
+data "databricks_postgres_endpoints" "development" {
+  parent = databricks_postgres_branch.development.name
 }

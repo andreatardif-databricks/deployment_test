@@ -1,6 +1,6 @@
-output "group_id" {
-  description = "ID of the lakebase-users group"
-  value       = databricks_group.lakebase_users.id
+output "group_name" {
+  description = "Name of the lakebase-users group"
+  value       = var.group_name
 }
 
 output "permissions_applied" {

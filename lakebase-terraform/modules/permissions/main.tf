@@ -6,10 +6,8 @@ terraform {
   }
 }
 
-# Create the lakebase-users group
-resource "databricks_group" "lakebase_users" {
-  display_name = var.group_name
-}
+# NOTE: lakebase-users group must be created at account level before applying.
+# databricks account groups create --display-name lakebase-users --profile one-env-account
 
 # --- Unity Catalog Grants ---
 
@@ -26,7 +24,7 @@ resource "databricks_grants" "catalog" {
     privileges = ["ALL_PRIVILEGES"]
   }
   grant {
-    principal  = databricks_group.lakebase_users.display_name
+    principal  = var.group_name
     privileges = ["USE_CATALOG"]
   }
 }
@@ -44,7 +42,7 @@ resource "databricks_grants" "bronze" {
     privileges = ["ALL_PRIVILEGES"]
   }
   grant {
-    principal  = databricks_group.lakebase_users.display_name
+    principal  = var.group_name
     privileges = ["USE_SCHEMA", "SELECT"]
   }
 }
@@ -62,7 +60,7 @@ resource "databricks_grants" "silver" {
     privileges = ["ALL_PRIVILEGES"]
   }
   grant {
-    principal  = databricks_group.lakebase_users.display_name
+    principal  = var.group_name
     privileges = ["USE_SCHEMA", "SELECT"]
   }
 }
@@ -80,7 +78,7 @@ resource "databricks_grants" "gold" {
     privileges = ["ALL_PRIVILEGES"]
   }
   grant {
-    principal  = databricks_group.lakebase_users.display_name
+    principal  = var.group_name
     privileges = ["USE_SCHEMA", "SELECT"]
   }
 }
@@ -98,7 +96,7 @@ resource "databricks_grants" "volume" {
     privileges = ["ALL_PRIVILEGES"]
   }
   grant {
-    principal  = databricks_group.lakebase_users.display_name
+    principal  = var.group_name
     privileges = ["READ_VOLUME"]
   }
 }
@@ -116,7 +114,7 @@ resource "databricks_grants" "lakebase_catalog" {
     privileges = ["ALL_PRIVILEGES"]
   }
   grant {
-    principal  = databricks_group.lakebase_users.display_name
+    principal  = var.group_name
     privileges = ["USE_CATALOG"]
   }
 }

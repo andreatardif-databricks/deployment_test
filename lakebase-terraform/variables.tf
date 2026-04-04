@@ -10,6 +10,12 @@ variable "account_profile" {
   default     = "one-env-account"
 }
 
+variable "workspace_profile" {
+  description = "Databricks CLI profile for workspace-level OAuth"
+  type        = string
+  default     = "lakebase-terraform-ws"
+}
+
 variable "workspace_name" {
   description = "Name for the new serverless workspace"
   type        = string
@@ -19,13 +25,13 @@ variable "workspace_name" {
 variable "aws_region" {
   description = "AWS region for the workspace"
   type        = string
-  default     = "us-east-1"
+  default     = "us-east-2"
 }
 
 variable "metastore_id" {
   description = "ID of existing metastore to assign"
   type        = string
-  default     = "cc9be128-0493-426b-8d96-68d98d08517b"
+  default     = "4dd5ed5e-86ab-4536-8404-e8d5320d143b"
 }
 
 variable "catalog_name" {

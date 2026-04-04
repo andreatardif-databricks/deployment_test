@@ -25,5 +25,5 @@ output "production_endpoint_host" {
 
 output "dev_endpoint_host" {
   description = "Development endpoint host"
-  value       = try(databricks_postgres_endpoint.dev_primary.status.hosts.host, "pending")
+  value       = try(data.databricks_postgres_endpoints.development.endpoints[0].status.hosts.host, "pending")
 }

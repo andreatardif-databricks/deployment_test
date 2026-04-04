@@ -30,5 +30,5 @@ provider "databricks" {
   alias     = "workspace"
   host      = module.workspace.workspace_url
   auth_type = "databricks-cli"
-  profile   = var.account_profile
+  profile   = var.workspace_profile
 }

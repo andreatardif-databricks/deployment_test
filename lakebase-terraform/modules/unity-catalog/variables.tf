@@ -7,3 +7,8 @@ variable "data_dir" {
   description = "Local directory containing CSV data files"
   type        = string
 }
+
+variable "workspace_profile" {
+  description = "Databricks CLI profile for workspace-level access"
+  type        = string
+}
