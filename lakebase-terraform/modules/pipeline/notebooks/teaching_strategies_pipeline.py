@@ -25,7 +25,7 @@ def bronze_schools():
         .option("inferSchema", "true")
         .load(f"{VOLUME_PATH}/schools.csv")
         .withColumn("_ingested_at", F.current_timestamp())
-        .withColumn("_source_file", F.input_file_name())
+        .withColumn("_source_file", F.lit(VOLUME_PATH))
     )
 
 
@@ -41,7 +41,7 @@ def bronze_educators():
         .option("inferSchema", "true")
         .load(f"{VOLUME_PATH}/educators.csv")
         .withColumn("_ingested_at", F.current_timestamp())
-        .withColumn("_source_file", F.input_file_name())
+        .withColumn("_source_file", F.lit(VOLUME_PATH))
     )
 
 
@@ -57,7 +57,7 @@ def bronze_classrooms():
         .option("inferSchema", "true")
         .load(f"{VOLUME_PATH}/classrooms.csv")
         .withColumn("_ingested_at", F.current_timestamp())
-        .withColumn("_source_file", F.input_file_name())
+        .withColumn("_source_file", F.lit(VOLUME_PATH))
     )
 
 
@@ -73,7 +73,7 @@ def bronze_students():
         .option("inferSchema", "true")
         .load(f"{VOLUME_PATH}/students.csv")
         .withColumn("_ingested_at", F.current_timestamp())
-        .withColumn("_source_file", F.input_file_name())
+        .withColumn("_source_file", F.lit(VOLUME_PATH))
     )
 
 
@@ -89,7 +89,7 @@ def bronze_assessments():
         .option("inferSchema", "true")
         .load(f"{VOLUME_PATH}/assessments.csv")
         .withColumn("_ingested_at", F.current_timestamp())
-        .withColumn("_source_file", F.input_file_name())
+        .withColumn("_source_file", F.lit(VOLUME_PATH))
     )
 
 
@@ -105,7 +105,7 @@ def bronze_learning_objectives():
         .option("inferSchema", "true")
         .load(f"{VOLUME_PATH}/learning_objectives.csv")
         .withColumn("_ingested_at", F.current_timestamp())
-        .withColumn("_source_file", F.input_file_name())
+        .withColumn("_source_file", F.lit(VOLUME_PATH))
     )
 
 
