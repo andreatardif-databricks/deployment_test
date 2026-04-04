@@ -16,7 +16,7 @@ resource "databricks_pipeline" "this" {
   name       = "teaching_strategies_pipeline"
   serverless = true
   catalog    = var.catalog_name
-  target     = "gold"
+  schema     = "gold"
 
   library {
     notebook {

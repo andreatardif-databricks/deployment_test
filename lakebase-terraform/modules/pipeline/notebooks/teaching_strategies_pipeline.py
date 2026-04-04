@@ -14,7 +14,7 @@ VOLUME_PATH = "/Volumes/teaching_strategies/bronze/raw_data"
 # ---------- BRONZE ----------
 
 @dlt.table(
-    name="bronze_schools",
+    name="bronze.bronze_schools",
     comment="Raw schools data",
     table_properties={"quality": "bronze"},
 )
@@ -30,7 +30,7 @@ def bronze_schools():
 
 
 @dlt.table(
-    name="bronze_educators",
+    name="bronze.bronze_educators",
     comment="Raw educators data",
     table_properties={"quality": "bronze"},
 )
@@ -46,7 +46,7 @@ def bronze_educators():
 
 
 @dlt.table(
-    name="bronze_classrooms",
+    name="bronze.bronze_classrooms",
     comment="Raw classrooms data",
     table_properties={"quality": "bronze"},
 )
@@ -62,7 +62,7 @@ def bronze_classrooms():
 
 
 @dlt.table(
-    name="bronze_students",
+    name="bronze.bronze_students",
     comment="Raw students data",
     table_properties={"quality": "bronze"},
 )
@@ -78,7 +78,7 @@ def bronze_students():
 
 
 @dlt.table(
-    name="bronze_assessments",
+    name="bronze.bronze_assessments",
     comment="Raw assessments data",
     table_properties={"quality": "bronze"},
 )
@@ -94,7 +94,7 @@ def bronze_assessments():
 
 
 @dlt.table(
-    name="bronze_learning_objectives",
+    name="bronze.bronze_learning_objectives",
     comment="Raw learning objectives data",
     table_properties={"quality": "bronze"},
 )
@@ -112,14 +112,14 @@ def bronze_learning_objectives():
 # ---------- SILVER ----------
 
 @dlt.table(
-    name="silver_schools",
+    name="silver.silver_schools",
     comment="Cleaned schools",
     table_properties={"quality": "silver"},
 )
 @dlt.expect_or_drop("valid_school_id", "school_id IS NOT NULL")
 def silver_schools():
     return (
-        dlt.read("bronze_schools")
+        dlt.read("bronze.bronze_schools")
         .dropDuplicates(["school_id"])
         .withColumn("student_capacity", F.col("student_capacity").cast(IntegerType()))
         .withColumn("_processed_at", F.current_timestamp())
@@ -127,14 +127,14 @@ def silver_schools():
 
 
 @dlt.table(
-    name="silver_educators",
+    name="silver.silver_educators",
     comment="Cleaned educators",
     table_properties={"quality": "silver"},
 )
 @dlt.expect_or_drop("valid_educator_id", "educator_id IS NOT NULL")
 def silver_educators():
     return (
-        dlt.read("bronze_educators")
+        dlt.read("bronze.bronze_educators")
         .dropDuplicates(["educator_id"])
         .withColumn("hire_date", F.col("hire_date").cast(DateType()))
         .withColumn("_processed_at", F.current_timestamp())
@@ -142,14 +142,14 @@ def silver_educators():
 
 
 @dlt.table(
-    name="silver_classrooms",
+    name="silver.silver_classrooms",
     comment="Cleaned classrooms",
     table_properties={"quality": "silver"},
 )
 @dlt.expect_or_drop("valid_classroom_id", "classroom_id IS NOT NULL")
 def silver_classrooms():
     return (
-        dlt.read("bronze_classrooms")
+        dlt.read("bronze.bronze_classrooms")
         .dropDuplicates(["classroom_id"])
         .withColumn("capacity", F.col("capacity").cast(IntegerType()))
         .withColumn("_processed_at", F.current_timestamp())
@@ -157,14 +157,14 @@ def silver_classrooms():
 
 
 @dlt.table(
-    name="silver_students",
+    name="silver.silver_students",
     comment="Cleaned students",
     table_properties={"quality": "silver"},
 )
 @dlt.expect_or_drop("valid_student_id", "student_id IS NOT NULL")
 def silver_students():
     return (
-        dlt.read("bronze_students")
+        dlt.read("bronze.bronze_students")
         .dropDuplicates(["student_id"])
         .withColumn("date_of_birth", F.col("date_of_birth").cast(DateType()))
         .withColumn("enrollment_date", F.col("enrollment_date").cast(DateType()))
@@ -173,14 +173,14 @@ def silver_students():
 
 
 @dlt.table(
-    name="silver_assessments",
+    name="silver.silver_assessments",
     comment="Cleaned assessments",
     table_properties={"quality": "silver"},
 )
 @dlt.expect_or_drop("valid_assessment_id", "assessment_id IS NOT NULL")
 def silver_assessments():
     return (
-        dlt.read("bronze_assessments")
+        dlt.read("bronze.bronze_assessments")
         .dropDuplicates(["assessment_id"])
         .withColumn("score", F.col("score").cast(DoubleType()))
         .withColumn("assessment_date", F.col("assessment_date").cast(DateType()))
@@ -189,14 +189,14 @@ def silver_assessments():
 
 
 @dlt.table(
-    name="silver_learning_objectives",
+    name="silver.silver_learning_objectives",
     comment="Cleaned learning objectives",
     table_properties={"quality": "silver"},
 )
 @dlt.expect_or_drop("valid_objective_id", "objective_id IS NOT NULL")
 def silver_learning_objectives():
     return (
-        dlt.read("bronze_learning_objectives")
+        dlt.read("bronze.bronze_learning_objectives")
         .dropDuplicates(["objective_id"])
         .withColumn("_processed_at", F.current_timestamp())
     )
@@ -205,15 +205,15 @@ def silver_learning_objectives():
 # ---------- GOLD ----------
 
 @dlt.table(
-    name="assessment_summary_by_classroom",
+    name="gold.assessment_summary_by_classroom",
     comment="Assessment scores aggregated by classroom, subject, and period",
     table_properties={"quality": "gold"},
 )
 def gold_assessment_summary():
-    classrooms = dlt.read("silver_classrooms")
-    students = dlt.read("silver_students")
-    assessments = dlt.read("silver_assessments")
-    schools = dlt.read("silver_schools")
+    classrooms = dlt.read("silver.silver_classrooms")
+    students = dlt.read("silver.silver_students")
+    assessments = dlt.read("silver.silver_assessments")
+    schools = dlt.read("silver.silver_schools")
 
     return (
         assessments.alias("a")
@@ -240,16 +240,16 @@ def gold_assessment_summary():
 
 
 @dlt.table(
-    name="educator_performance_metrics",
+    name="gold.educator_performance_metrics",
     comment="Student count and avg scores per educator",
     table_properties={"quality": "gold"},
 )
 def gold_educator_metrics():
-    educators = dlt.read("silver_educators")
-    classrooms = dlt.read("silver_classrooms")
-    students = dlt.read("silver_students")
-    assessments = dlt.read("silver_assessments")
-    schools = dlt.read("silver_schools")
+    educators = dlt.read("silver.silver_educators")
+    classrooms = dlt.read("silver.silver_classrooms")
+    students = dlt.read("silver.silver_students")
+    assessments = dlt.read("silver.silver_assessments")
+    schools = dlt.read("silver.silver_schools")
 
     return (
         educators.alias("e")
@@ -274,16 +274,16 @@ def gold_educator_metrics():
 
 
 @dlt.table(
-    name="school_performance_overview",
+    name="gold.school_performance_overview",
     comment="School-level performance rollup",
     table_properties={"quality": "gold"},
 )
 def gold_school_performance():
-    schools = dlt.read("silver_schools")
-    classrooms = dlt.read("silver_classrooms")
-    students = dlt.read("silver_students")
-    educators = dlt.read("silver_educators")
-    assessments = dlt.read("silver_assessments")
+    schools = dlt.read("silver.silver_schools")
+    classrooms = dlt.read("silver.silver_classrooms")
+    students = dlt.read("silver.silver_students")
+    educators = dlt.read("silver.silver_educators")
+    assessments = dlt.read("silver.silver_assessments")
 
     return (
         schools.alias("sc")
