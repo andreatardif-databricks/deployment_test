@@ -191,21 +191,26 @@ function n(id, name, type, tool, badge, desc, config, up, down, shape) {
   N[id] = {id,name,type,tool,badge,desc,config,up:up||[],down:down||[],shape:shape||''};
 }
 
-// Phase 1: Infrastructure (Terraform)
+// Phase 1: Foundation & Infrastructure (Terraform + SDK)
 n('ws','Serverless Workspace','databricks_mws_workspaces','terraform','TF',
   'Serverless AWS workspace in us-east-2',
   'workspace_name = "lakebase-terraform-ws"\naws_region     = "us-east-2"\ncompute_mode   = "SERVERLESS"\n\nURL: dbc-a3e7ef88-801c.cloud.databricks.com\nID:  7474646922738859',
-  [],['ms','sp'],'stadium');
+  [],['ms','acct-sp','grp'],'stadium');
 
 n('ms','Metastore Assignment','databricks_metastore_assignment','terraform','TF',
   'Assigns metastore-dev-us-east-2 (S3 root storage)',
   'workspace_id = 7474646922738859\nmetastore_id = "4dd5ed5e-..."\nmetastore    = "metastore-dev-us-east-2"',
   ['ws'],['cat']);
 
-n('sp','Service Principal','databricks_service_principal','terraform','TF',
-  'lakebase-terraform-sp — automated operations identity',
-  'display_name   = "lakebase-terraform-sp"\napplication_id = "40c7212c-..."\nactive         = true',
-  ['ws'],['grants']);
+n('acct-sp','Service Principal','account service-principals create','sdk','SDK',
+  'lakebase-terraform-sp — account-level SP for OAuth roles',
+  'display_name   = "lakebase-terraform-sp"\napplication_id = "bdaa4894-807d-450b-9265-\n                  0e70f1e9fe03"\nid             = 76785620678440\nlevel          = account\n\nAssigned to workspace via:\n  workspace-assignment update',
+  ['ws'],['oauth-sp-prod','oauth-sp-dev','grants','proj-acls']);
+
+n('grp','lakebase-users Group','account groups create','sdk','SDK',
+  'Account-level group — members: austin.choi@databricks.com',
+  'display_name = "lakebase-users"\nlevel        = account\nid           = 86640202726511\n\nMembers:\n  austin.choi@databricks.com (3275534733162887)\n\nAssigned to workspace via:\n  workspace-assignment update\n  permissions = ["USER"]',
+  ['ws'],['oauth-grp-prod','oauth-grp-dev','grants','proj-acls']);
 
 // Phase 2: Unity Catalog (Terraform)
 n('cat','teaching_strategies','databricks_catalog','terraform','TF',
@@ -308,31 +313,47 @@ n('sync-s','school_overview synced','w.database.create_synced_database_table','s
   'target = teaching_strategies_lakebase\n  .public.school_performance_overview_synced\nsource = teaching_strategies.gold\n  .school_performance_overview\n\nmode = SNAPSHOT\nprimary_keys = [school_id]\nStatus: ACTIVE / ONLINE',
   ['pipe-gld','lb-cat'],[]);
 
-// Phase 6: Permissions
-n('grp','lakebase-users','databricks account groups create','sdk','SDK',
-  'Account-level group (UC requires account groups)',
-  'display_name = "lakebase-users"\nlevel = account\nid = 86022807791662\n\nCreated via CLI:\n  databricks account groups create\n  --profile one-env-account',
-  [],['grants','perms']);
+// Phase 6: Access Control — OAuth Roles + Grants + Project ACLs
 
-n('grants','UC Grants','databricks_grants','terraform','TF',
-  'Catalog + schema + volume grants for 3 identities',
-  'teaching_strategies + teaching_strategies_lakebase:\n  SP          → ALL_PRIVILEGES\n  andrea.t@   → ALL_PRIVILEGES\n  lakebase-users → USE_CATALOG\n\nbronze / silver / gold schemas:\n  SP          → ALL_PRIVILEGES\n  andrea.t@   → ALL_PRIVILEGES\n  lakebase-users → USE_SCHEMA, SELECT\n\nraw_data volume:\n  lakebase-users → READ_VOLUME',
-  ['sp','grp','cat','lb-cat'],[]);
+n('oauth-sp-prod','SP OAuth Role (prod)','w.postgres.create_role','sdk','SDK',
+  'OAuth role for SP on production branch',
+  'parent = projects/teaching-strategies-project\n         /branches/production\nidentity_type = SERVICE_PRINCIPAL\npostgres_role = "bdaa4894-807d-..."\n\nRole: rol-ajw5-xoh3x4vqrh\nMembership: (default permissions)',
+  ['acct-sp','br-prod'],[]);
 
-n('perms','Lakebase ACLs','null_resource + manage_lakebase_perms.sh','rest-api','REST',
-  'Project-level + Postgres role permissions',
-  'Project ACLs:\n  SP          → CAN_MANAGE\n  andrea.t@   → CAN_MANAGE\n  lakebase-users → CAN_USE\n\nPostgres Roles (branch-scoped):\n  Production:\n    SP + andrea → databricks_superuser\n    lakebase-users → standard role\n  Development:\n    All → databricks_superuser',
-  ['proj','sp','grp'],[]);
+n('oauth-sp-dev','SP OAuth Role (dev)','w.postgres.create_role','sdk','SDK',
+  'OAuth role for SP on development branch',
+  'parent = projects/teaching-strategies-project\n         /branches/development\nidentity_type = SERVICE_PRINCIPAL\npostgres_role = "bdaa4894-807d-..."\n\nRole: rol-b0ut-o0ct9zepy4\nMembership: (default permissions)',
+  ['acct-sp','br-dev'],[]);
+
+n('oauth-grp-prod','Group OAuth Role (prod)','w.postgres.create_role','sdk','SDK',
+  'OAuth role for lakebase-users on production — default permissions',
+  'parent = projects/teaching-strategies-project\n         /branches/production\nidentity_type = GROUP\npostgres_role = "lakebase-users"\n\nRole: rol-nby9-129e0issr2\nMembership: (default — read access)',
+  ['grp','br-prod'],[]);
+
+n('oauth-grp-dev','Group OAuth Role (dev)','w.postgres.create_role + update_role','sdk','SDK',
+  'OAuth role for lakebase-users on dev — databricks_superuser',
+  'parent = projects/teaching-strategies-project\n         /branches/development\nidentity_type = GROUP\npostgres_role = "lakebase-users"\n\nRole: rol-ur9h-c2domhj4t9\nMembership: [DATABRICKS_SUPERUSER]\n\nGranted via w.postgres.update_role\n  with FieldMask(spec.membership_roles)',
+  ['grp','br-dev'],[]);
+
+n('proj-acls','Project ACLs','PUT /permissions/database-projects','rest-api','REST',
+  'Project-level CAN_MANAGE / CAN_USE permissions',
+  'Object: database-projects/\n  teaching-strategies-project\n\nlakebase-terraform-sp → CAN_MANAGE\nandrea.tardif@        → CAN_MANAGE\nlakebase-users        → CAN_USE\n\nApplied via workspace permissions API\n  PUT /api/2.0/permissions/database-projects/...',
+  ['acct-sp','grp','proj'],[]);
+
+n('grants','UC Grants','SQL GRANT statements','sdk','SDK',
+  'UC catalog + schema + volume grants for SP and group',
+  'teaching_strategies catalog:\n  SP (bdaa4894) → ALL_PRIVILEGES\n  andrea.t@     → ALL_PRIVILEGES\n  lakebase-users → USE_CATALOG\n\nbronze / silver / gold schemas:\n  SP → ALL_PRIVILEGES\n  lakebase-users → USE_SCHEMA, SELECT\n\nraw_data volume:\n  SP → ALL_PRIVILEGES\n  lakebase-users → READ_VOLUME\n\nteaching_strategies_lakebase catalog:\n  SP → ALL_PRIVILEGES\n  andrea.t@ → ALL_PRIVILEGES\n  lakebase-users → USE_CATALOG\n\nApplied via SQL GRANT statements\n  on Serverless SQL Warehouse',
+  ['acct-sp','grp','cat','lb-cat'],[]);
 
 // ── Diagram Layout (phases → rows → arrows) ──────────────
 const phases = [
-  { num:1, label:'Foundation & Infrastructure', tool:'Terraform', rows:[['ws'],['ms','sp']] },
+  { num:1, label:'Foundation & Infrastructure', tool:'Terraform + SDK (account-level)', rows:[['ws'],['ms','acct-sp','grp']] },
   { num:2, label:'Unity Catalog Structure', tool:'Terraform', rows:[['cat'],['s-brz','s-slv','s-gld'],['vol']] },
   { num:'2b', label:'Synthetic Data Generation', tool:'Python Script', rows:[['gen'],['upload']] },
   { num:3, label:'SDP Pipeline', tool:'Terraform + Pipeline Run', rows:[['nb','pipe'],['pipe-brz'],['pipe-slv'],['pipe-gld']] },
   { num:4, label:'Lakebase Autoscaling', tool:'Terraform + REST API', rows:[['proj'],['br-prod','br-dev'],['lb-cat']] },
   { num:5, label:'Delta → Postgres Sync', tool:'Databricks SDK', rows:[['sync-a','sync-e','sync-s']] },
-  { num:6, label:'Access Control & Permissions', tool:'Terraform + SDK + REST API', rows:[['grp'],['grants','perms']] },
+  { num:6, label:'Access Control & Permissions', tool:'SDK + REST API', rows:[['oauth-sp-prod','oauth-sp-dev','oauth-grp-prod','oauth-grp-dev'],['proj-acls','grants']] },
 ];
 
 const arrowSvg = `<svg viewBox="0 0 20 28"><line x1="10" y1="2" x2="10" y2="22" stroke="#d2d5da" stroke-width="2"/><polygon points="5,20 10,26 15,20" fill="#d2d5da"/></svg>`;
