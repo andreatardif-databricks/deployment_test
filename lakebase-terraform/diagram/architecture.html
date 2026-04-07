@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lakebase Terraform — Architecture & Tooling Overview</title>
+<style>
+:root {
+  --navy: #1b3a4b;
+  --navy-light: #2a5470;
+  --red-orange: #ff6240;
+  --white: #ffffff;
+  --off-white: #f7f8fa;
+  --bg: #ffffff;
+  --gray-100: #e8eaed;
+  --gray-200: #d2d5da;
+  --gray-400: #8b919a;
+  --gray-600: #5a6068;
+  --blue-tf: #4a90d9;
+  --green-sdk: #27ae60;
+  --purple-rest: #8e44ad;
+  --gray-script: #7f8c8d;
+  --orange-ui: #e67e22;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--off-white); color: var(--navy); }
+
+/* Header */
+header { background: linear-gradient(135deg, var(--navy), var(--navy-light)); color: white; padding: 24px 32px; }
+header h1 { font-size: 20px; font-weight: 600; }
+header .sub { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+.toolbar { display: flex; gap: 8px; padding: 12px 32px; background: white; border-bottom: 1px solid var(--gray-100); align-items: center; flex-wrap: wrap; }
+.toolbar input { padding: 6px 12px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 12px; width: 180px; outline: none; }
+.toolbar input:focus { border-color: var(--blue-tf); }
+.tbtn { padding: 5px 12px; border: 1px solid var(--gray-200); border-radius: 6px; background: white; font-size: 11px; cursor: pointer; font-weight: 500; transition: all .15s; }
+.tbtn:hover { background: var(--off-white); }
+.tbtn.active { background: var(--navy); color: white; border-color: var(--navy); }
+.legend { display: flex; gap: 16px; margin-left: auto; align-items: center; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--gray-600); }
+.ldot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* Canvas */
+.canvas { padding: 32px; overflow-x: auto; }
+.diagram { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 900px; }
+
+/* Phase group */
+.phase { width: 100%; max-width: 1100px; }
+.phase-label {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--gray-400); margin-bottom: 10px; padding-left: 4px;
+}
+.phase-label .pnum {
+  background: var(--navy); color: white; width: 22px; height: 22px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; letter-spacing: 0;
+}
+.phase-label .ptool { font-weight: 400; opacity: 0.7; margin-left: 4px; }
+
+/* Row of nodes */
+.row { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-bottom: 4px; }
+
+/* Node (Mermaid-style box) */
+.nd {
+  background: white; border: 2px solid var(--gray-200); border-radius: 8px;
+  padding: 10px 16px; min-width: 160px; max-width: 240px;
+  text-align: center; cursor: pointer; position: relative;
+  transition: all .2s; font-size: 12px;
+}
+.nd:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
+.nd.dim { opacity: 0.2; pointer-events: none; }
+.nd.hl { border-color: var(--red-orange); box-shadow: 0 0 0 3px rgba(255,98,64,0.15); }
+
+/* Tool color strip */
+.nd::before {
+  content: ''; position: absolute; top: -2px; left: -2px; right: -2px; height: 4px;
+  border-radius: 8px 8px 0 0;
+}
+.nd.t-terraform::before { background: var(--blue-tf); }
+.nd.t-sdk::before { background: var(--green-sdk); }
+.nd.t-rest-api::before { background: var(--purple-rest); }
+.nd.t-script::before { background: var(--gray-script); }
+.nd.t-ui::before { background: var(--orange-ui); }
+
+/* Shapes — Mermaid-like */
+.nd.shape-stadium { border-radius: 24px; }
+.nd.shape-hex { clip-path: polygon(8% 0%, 92% 0%, 100% 50%, 92% 100%, 8% 100%, 0% 50%); padding: 12px 24px; border: none; }
+.nd.shape-hex::before { display: none; }
+.nd.shape-cyl { border-radius: 8px; border-top: 4px solid; }
+.nd.shape-cyl.t-terraform { border-top-color: var(--blue-tf); }
+.nd.shape-cyl.t-sdk { border-top-color: var(--green-sdk); }
+.nd.shape-cyl.t-rest-api { border-top-color: var(--purple-rest); }
+.nd.shape-cyl.t-script { border-top-color: var(--gray-script); }
+.nd.shape-cyl.t-ui { border-top-color: var(--orange-ui); }
+.nd.shape-diamond { transform-origin: center; }
+
+.nd-name { font-weight: 600; font-size: 12px; line-height: 1.3; }
+.nd-type { font-size: 10px; color: var(--gray-400); font-family: 'SF Mono', monospace; margin-top: 2px; }
+.nd-badge {
+  display: inline-block; font-size: 9px; font-weight: 700; padding: 1px 6px;
+  border-radius: 3px; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.3px;
+}
+.b-tf { background: rgba(74,144,217,0.12); color: var(--blue-tf); }
+.b-sdk { background: rgba(39,174,96,0.12); color: var(--green-sdk); }
+.b-rest { background: rgba(142,68,173,0.12); color: var(--purple-rest); }
+.b-script { background: rgba(127,140,141,0.12); color: var(--gray-script); }
+.b-ui { background: rgba(230,126,34,0.12); color: var(--orange-ui); }
+
+/* Arrows */
+.arrow { display: flex; justify-content: center; padding: 2px 0; }
+.arrow svg { width: 20px; height: 28px; }
+.arrow-label { font-size: 9px; color: var(--gray-400); text-align: center; margin-top: -2px; margin-bottom: 2px; }
+
+/* Multi-arrow row */
+.arrow-row { display: flex; justify-content: center; gap: 80px; padding: 2px 0; }
+
+/* Detail overlay */
+.overlay { display:none; position:fixed; inset:0; background:rgba(27,58,75,0.35); z-index:100; backdrop-filter:blur(2px); }
+.overlay.open { display:flex; align-items:center; justify-content:center; }
+.panel {
+  background:white; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.2);
+  max-width:520px; width:92%; max-height:82vh; overflow-y:auto;
+  animation: pop .18s ease;
+}
+@keyframes pop { from { transform:scale(0.95); opacity:0; } to { transform:scale(1); opacity:1; } }
+.p-head { padding:18px 22px; border-bottom:1px solid var(--gray-100); display:flex; justify-content:space-between; align-items:flex-start; }
+.p-head h2 { font-size:15px; }
+.p-close { background:none; border:none; font-size:22px; cursor:pointer; color:var(--gray-400); line-height:1; }
+.p-close:hover { color:var(--navy); }
+.p-body { padding:18px 22px; }
+.p-sec { margin-bottom:14px; }
+.p-sec:last-child { margin-bottom:0; }
+.p-label { font-size:10px; font-weight:700; color:var(--gray-400); text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px; }
+.p-val { font-size:12px; }
+.p-val code { background:var(--off-white); padding:1px 5px; border-radius:3px; font-size:11px; font-family:'SF Mono',monospace; }
+.p-config {
+  font-family:'SF Mono',monospace; font-size:11px; background:var(--off-white);
+  padding:10px 14px; border-radius:6px; white-space:pre-wrap; word-break:break-all;
+  line-height:1.55;
+}
+.p-deps { display:flex; flex-wrap:wrap; gap:4px; margin-top:3px; }
+.dep { font-size:10px; padding:2px 7px; background:var(--off-white); border-radius:4px; cursor:pointer; transition:all .1s; }
+.dep:hover { background:var(--gray-100); }
+.dep.up { border-left:2px solid var(--blue-tf); }
+.dep.down { border-left:2px solid var(--red-orange); }
+
+footer { text-align:center; padding:20px; font-size:11px; color:var(--gray-400); border-top:1px solid var(--gray-100); margin-top:16px; }
+
+@media (max-width:768px) {
+  .canvas { padding:16px; }
+  .diagram { min-width: auto; }
+  .nd { min-width:130px; max-width:180px; }
+  header { padding:16px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Lakebase Terraform — Architecture & Tooling Overview</h1>
+  <div class="sub">Teaching Strategies Education Domain &bull; Serverless Workspace &bull; us-east-2 &bull; Account 0d26daa6</div>
+</header>
+
+<div class="toolbar">
+  <input type="text" id="search" placeholder="Search resources..." />
+  <button class="tbtn active" data-f="all">All</button>
+  <button class="tbtn" data-f="terraform">Terraform</button>
+  <button class="tbtn" data-f="sdk">SDK</button>
+  <button class="tbtn" data-f="rest-api">REST API</button>
+  <button class="tbtn" data-f="script">Script</button>
+  <button class="tbtn" data-f="ui">UI</button>
+  <div class="legend">
+    <span class="legend-item"><span class="ldot" style="background:var(--blue-tf)"></span>Terraform</span>
+    <span class="legend-item"><span class="ldot" style="background:var(--green-sdk)"></span>SDK / CLI</span>
+    <span class="legend-item"><span class="ldot" style="background:var(--purple-rest)"></span>REST API</span>
+    <span class="legend-item"><span class="ldot" style="background:var(--gray-script)"></span>Script</span>
+    <span class="legend-item"><span class="ldot" style="background:var(--orange-ui)"></span>UI (manual)</span>
+  </div>
+</div>
+
+<div class="canvas"><div class="diagram" id="diagram"></div></div>
+
+<div class="overlay" id="ov"><div class="panel" id="pn"></div></div>
+
+<footer>Generated 2026-04-03 &bull; Databricks DSA Engagement &bull; dbc-a3e7ef88-801c.cloud.databricks.com</footer>
+
+<script>
+// ── Data Model ──────────────────────────────────────────────
+const N = {};
+function n(id, name, type, tool, badge, desc, config, up, down, shape) {
+  N[id] = {id,name,type,tool,badge,desc,config,up:up||[],down:down||[],shape:shape||''};
+}
+
+// Phase 1: Foundation & Infrastructure (Terraform + SDK)
+n('ws','Serverless Workspace','databricks_mws_workspaces','terraform','TF',
+  'Serverless AWS workspace in us-east-2',
+  'workspace_name = "lakebase-terraform-ws"\naws_region     = "us-east-2"\ncompute_mode   = "SERVERLESS"\n\nURL: dbc-a3e7ef88-801c.cloud.databricks.com\nID:  7474646922738859',
+  [],['ms','acct-sp','grp'],'stadium');
+
+n('ms','Metastore Assignment','databricks_metastore_assignment','terraform','TF',
+  'Assigns metastore-dev-us-east-2 (S3 root storage)',
+  'workspace_id = 7474646922738859\nmetastore_id = "4dd5ed5e-..."\nmetastore    = "metastore-dev-us-east-2"',
+  ['ws'],['cat']);
+
+n('acct-sp','Service Principal','account service-principals create','sdk','SDK',
+  'lakebase-terraform-sp — account-level SP for OAuth roles',
+  'display_name   = "lakebase-terraform-sp"\napplication_id = "bdaa4894-807d-450b-9265-\n                  0e70f1e9fe03"\nid             = 76785620678440\nlevel          = account\n\nAssigned to workspace via:\n  workspace-assignment update',
+  ['ws'],['oauth-sp-prod','oauth-sp-dev','grants','proj-acls']);
+
+n('grp','lakebase-users Group','account groups create','sdk','SDK',
+  'Account-level group — members: austin.choi@databricks.com',
+  'display_name = "lakebase-users"\nlevel        = account\nid           = 86640202726511\n\nMembers:\n  austin.choi@databricks.com (3275534733162887)\n\nAssigned to workspace via:\n  workspace-assignment update\n  permissions = ["USER"]',
+  ['ws'],['oauth-grp-prod','oauth-grp-dev','grants','proj-acls']);
+
+// Phase 2: Unity Catalog (Terraform)
+n('cat','teaching_strategies','databricks_catalog','terraform','TF',
+  'Unity Catalog catalog for all Delta tables',
+  'name    = "teaching_strategies"\ncomment = "Teaching Strategies education domain data"\ntype    = MANAGED_CATALOG',
+  ['ms'],['s-brz','s-slv','s-gld'],'cyl');
+
+n('s-brz','bronze','databricks_schema','terraform','TF',
+  'Raw ingestion layer — 6 tables',
+  'catalog = "teaching_strategies"\nname    = "bronze"\n\nTables: bronze_schools, bronze_educators,\n  bronze_classrooms, bronze_students,\n  bronze_assessments, bronze_learning_objectives',
+  ['cat'],['vol']);
+
+n('s-slv','silver','databricks_schema','terraform','TF',
+  'Cleaned & deduped — 6 tables',
+  'catalog = "teaching_strategies"\nname    = "silver"\n\nTables: silver_schools, silver_educators,\n  silver_classrooms, silver_students,\n  silver_assessments, silver_learning_objectives',
+  ['cat'],['pipe-slv']);
+
+n('s-gld','gold','databricks_schema','terraform','TF',
+  'Business-ready aggregations — 3 tables',
+  'catalog = "teaching_strategies"\nname    = "gold"\n\nTables:\n  assessment_summary_by_classroom\n  educator_performance_metrics\n  school_performance_overview',
+  ['cat'],['pipe-gld']);
+
+n('vol','raw_data Volume','databricks_volume','terraform','TF',
+  'Managed UC Volume for CSV landing zone',
+  'schema     = "bronze"\nname       = "raw_data"\nvolume_type= "MANAGED"\n\nPath: /Volumes/teaching_strategies/bronze/raw_data/',
+  ['s-brz'],['upload']);
+
+// Phase 2b: Synthetic Data (Script)
+n('gen','generate_data.py','Python stdlib','script','Script',
+  'Generates 7,000 rows across 6 education entities',
+  'Entities:\n  schools:              50 rows\n  educators:           200 rows\n  classrooms:          150 rows\n  students:          1,500 rows\n  learning_objectives: 100 rows\n  assessments:       5,000 rows\n\nOutput: data/*.csv  |  Seed: 42',
+  [],['upload']);
+
+n('upload','CSV Upload','null_resource + databricks fs cp','script','Script',
+  'Uploads 6 CSVs to UC Volume via Databricks CLI',
+  'databricks fs cp ./data/*.csv\n  dbfs:/Volumes/teaching_strategies/bronze/raw_data/\n  --overwrite\n  --profile lakebase-terraform-ws',
+  ['gen','vol'],['pipe-brz']);
+
+// Phase 3: Pipeline (Terraform + run)
+n('nb','Pipeline Notebook','databricks_notebook','terraform','TF',
+  'DLT notebook with 15 table definitions across 3 layers',
+  'path = "/Shared/teaching_strategies/\n        teaching_strategies_pipeline"\nlanguage = "PYTHON"\n\n15 @dlt.table definitions:\n  Bronze: 6 (CSV read + metadata)\n  Silver: 6 (dedup, cast, validate)\n  Gold:   3 (aggregated joins)',
+  [],['pipe']);
+
+n('pipe','SDP Pipeline','databricks_pipeline','terraform','TF',
+  'Serverless Spark Declarative Pipeline',
+  'name       = "teaching_strategies_pipeline"\nserverless = true\ncatalog    = "teaching_strategies"\nschema     = "gold"\n\nWrites to bronze.*, silver.*, gold.*\nvia schema-qualified table names',
+  ['nb'],['pipe-brz'],'stadium');
+
+n('pipe-brz','Bronze Stage','dlt.table x6','terraform','TF',
+  'Raw CSV ingestion + _ingested_at, _source_file',
+  'spark.read.csv(VOLUME_PATH/*.csv)\n+ F.current_timestamp() → _ingested_at\n+ F.lit(VOLUME_PATH)    → _source_file\n\n→ teaching_strategies.bronze.*',
+  ['pipe','upload'],['pipe-slv']);
+
+n('pipe-slv','Silver Stage','dlt.table x6','terraform','TF',
+  'Dedup, type casting, expect_or_drop validation',
+  'dlt.read("bronze.*")\n  .dropDuplicates([natural_key])\n  .cast(DateType, IntegerType, ...)\n  @dlt.expect_or_drop("valid_*_id")\n  + _processed_at\n\n→ teaching_strategies.silver.*',
+  ['pipe-brz'],['pipe-gld']);
+
+n('pipe-gld','Gold Stage','dlt.table x3','terraform','TF',
+  'Multi-table joins → aggregated summaries',
+  'assessment_summary_by_classroom\n  JOIN students→classrooms→schools\n  GROUP BY classroom, subject, period\n\neducator_performance_metrics\n  JOIN classrooms→students→assessments\n  GROUP BY educator\n\nschool_performance_overview\n  LEFT JOIN all entities\n  GROUP BY school',
+  ['pipe-slv'],['sync-a','sync-e','sync-s']);
+
+// Phase 4: Lakebase (Terraform)
+n('proj','Lakebase Project','databricks_postgres_project','terraform','TF',
+  'teaching-strategies-project — Postgres 17, autoscaling',
+  'project_id   = "teaching-strategies-project"\npg_version   = 17\ndisplay_name = "Teaching Strategies Lakebase"\nmin_cu = 0.5  |  max_cu = 4.0\nsuspend_timeout = 300s\n\nUID: d1f29f25-...',
+  ['ws'],['br-prod','br-dev'],'stadium');
+
+n('br-prod','production','auto-created with project','terraform','TF',
+  'Default protected branch — production endpoint',
+  'branch = "production" (auto-created)\ndefault = true\nendpoint: ep-rapid-term-d88lsp6h\n  .database.us-east-2.cloud.databricks.com\n\nUID: br-purple-wave-d83fzppu',
+  ['proj'],['lb-cat']);
+
+n('br-dev','development','databricks_postgres_branch','terraform','TF',
+  '7-day TTL dev branch — copy-on-write from production',
+  'branch_id = "development"\nttl = "604800s" (7 days)\nendpoint: ep-fragrant-fire-d8gwiqh9\n  .database.us-east-2.cloud.databricks.com\n\nUID: br-dark-block-d8i7zm4q',
+  ['proj'],[]);
+
+// Phase 4b: Lakebase Catalog (REST API)
+n('lb-cat','teaching_strategies_lakebase','POST /api/2.0/postgres/catalogs','rest-api','REST',
+  'Lakebase Postgres UC Catalog (MANAGED_ONLINE_CATALOG)',
+  'catalog_id = "teaching_strategies_lakebase"\ntype = MANAGED_ONLINE_CATALOG\n\nspec:\n  branch = projects/teaching-strategies-project\n          /branches/production\n  postgres_database = "databricks_postgres"\n\nCreated via: w.postgres.create_catalog\n  (REST — SDK 0.102 lacks this method)',
+  ['br-prod'],['sync-a','sync-e','sync-s'],'cyl');
+
+// Phase 5: Synced Tables (SDK)
+n('sync-a','assessment_summary synced','w.database.create_synced_database_table','sdk','SDK',
+  'Gold → Postgres SNAPSHOT sync',
+  'target = teaching_strategies_lakebase\n  .public.assessment_summary_by_classroom_synced\nsource = teaching_strategies.gold\n  .assessment_summary_by_classroom\n\nmode = SNAPSHOT\nprimary_keys = [classroom_id, subject,\n  assessment_period]\nStatus: ACTIVE / ONLINE',
+  ['pipe-gld','lb-cat'],[]);
+
+n('sync-e','educator_metrics synced','w.database.create_synced_database_table','sdk','SDK',
+  'Gold → Postgres SNAPSHOT sync',
+  'target = teaching_strategies_lakebase\n  .public.educator_performance_metrics_synced\nsource = teaching_strategies.gold\n  .educator_performance_metrics\n\nmode = SNAPSHOT\nprimary_keys = [educator_id]\nStatus: ACTIVE / ONLINE',
+  ['pipe-gld','lb-cat'],[]);
+
+n('sync-s','school_overview synced','w.database.create_synced_database_table','sdk','SDK',
+  'Gold → Postgres SNAPSHOT sync',
+  'target = teaching_strategies_lakebase\n  .public.school_performance_overview_synced\nsource = teaching_strategies.gold\n  .school_performance_overview\n\nmode = SNAPSHOT\nprimary_keys = [school_id]\nStatus: ACTIVE / ONLINE',
+  ['pipe-gld','lb-cat'],[]);
+
+// Phase 6: Access Control — OAuth Roles + Grants + Project ACLs
+
+n('oauth-sp-prod','SP OAuth Role (prod)','w.postgres.create_role','sdk','SDK',
+  'OAuth role for SP on production branch',
+  'parent = projects/teaching-strategies-project\n         /branches/production\nidentity_type = SERVICE_PRINCIPAL\npostgres_role = "bdaa4894-807d-..."\n\nRole: rol-ajw5-xoh3x4vqrh\nMembership: (default permissions)',
+  ['acct-sp','br-prod'],[]);
+
+n('oauth-sp-dev','SP OAuth Role (dev)','w.postgres.create_role','sdk','SDK',
+  'OAuth role for SP on development branch',
+  'parent = projects/teaching-strategies-project\n         /branches/development\nidentity_type = SERVICE_PRINCIPAL\npostgres_role = "bdaa4894-807d-..."\n\nRole: rol-b0ut-o0ct9zepy4\nMembership: (default permissions)',
+  ['acct-sp','br-dev'],[]);
+
+n('oauth-grp-prod','Group OAuth Role (prod)','w.postgres.create_role','sdk','SDK',
+  'OAuth role for lakebase-users on production — default permissions',
+  'parent = projects/teaching-strategies-project\n         /branches/production\nidentity_type = GROUP\npostgres_role = "lakebase-users"\n\nRole: rol-nby9-129e0issr2\nMembership: (default — read access)',
+  ['grp','br-prod'],[]);
+
+n('oauth-grp-dev','Group OAuth Role (dev)','w.postgres.create_role + update_role','sdk','SDK',
+  'OAuth role for lakebase-users on dev — databricks_superuser',
+  'parent = projects/teaching-strategies-project\n         /branches/development\nidentity_type = GROUP\npostgres_role = "lakebase-users"\n\nRole: rol-ur9h-c2domhj4t9\nMembership: [DATABRICKS_SUPERUSER]\n\nGranted via w.postgres.update_role\n  with FieldMask(spec.membership_roles)',
+  ['grp','br-dev'],[]);
+
+n('proj-acls','Project ACLs','PUT /permissions/database-projects','rest-api','REST',
+  'Project-level CAN_MANAGE / CAN_USE permissions',
+  'Object: database-projects/\n  teaching-strategies-project\n\nlakebase-terraform-sp → CAN_MANAGE\nandrea.tardif@        → CAN_MANAGE\nlakebase-users        → CAN_USE\n\nApplied via workspace permissions API\n  PUT /api/2.0/permissions/database-projects/...',
+  ['acct-sp','grp','proj'],[]);
+
+n('grants','UC Grants','SQL GRANT statements','sdk','SDK',
+  'UC catalog + schema + volume grants for SP and group',
+  'teaching_strategies catalog:\n  SP (bdaa4894) → ALL_PRIVILEGES\n  andrea.t@     → ALL_PRIVILEGES\n  lakebase-users → USE_CATALOG\n\nbronze / silver / gold schemas:\n  SP → ALL_PRIVILEGES\n  lakebase-users → USE_SCHEMA, SELECT\n\nraw_data volume:\n  SP → ALL_PRIVILEGES\n  lakebase-users → READ_VOLUME\n\nteaching_strategies_lakebase catalog:\n  SP → ALL_PRIVILEGES\n  andrea.t@ → ALL_PRIVILEGES\n  lakebase-users → USE_CATALOG\n\nApplied via SQL GRANT statements\n  on Serverless SQL Warehouse',
+  ['acct-sp','grp','cat','lb-cat'],[]);
+
+// ── Diagram Layout (phases → rows → arrows) ──────────────
+const phases = [
+  { num:1, label:'Foundation & Infrastructure', tool:'Terraform + SDK (account-level)', rows:[['ws'],['ms','acct-sp','grp']] },
+  { num:2, label:'Unity Catalog Structure', tool:'Terraform', rows:[['cat'],['s-brz','s-slv','s-gld'],['vol']] },
+  { num:'2b', label:'Synthetic Data Generation', tool:'Python Script', rows:[['gen'],['upload']] },
+  { num:3, label:'SDP Pipeline', tool:'Terraform + Pipeline Run', rows:[['nb','pipe'],['pipe-brz'],['pipe-slv'],['pipe-gld']] },
+  { num:4, label:'Lakebase Autoscaling', tool:'Terraform + REST API', rows:[['proj'],['br-prod','br-dev'],['lb-cat']] },
+  { num:5, label:'Delta → Postgres Sync', tool:'Databricks SDK', rows:[['sync-a','sync-e','sync-s']] },
+  { num:6, label:'Access Control & Permissions', tool:'SDK + REST API', rows:[['oauth-sp-prod','oauth-sp-dev','oauth-grp-prod','oauth-grp-dev'],['proj-acls','grants']] },
+];
+
+const arrowSvg = `<svg viewBox="0 0 20 28"><line x1="10" y1="2" x2="10" y2="22" stroke="#d2d5da" stroke-width="2"/><polygon points="5,20 10,26 15,20" fill="#d2d5da"/></svg>`;
+
+function badgeClass(tool) {
+  return {terraform:'b-tf',sdk:'b-sdk','rest-api':'b-rest',script:'b-script',ui:'b-ui'}[tool]||'b-tf';
+}
+
+function renderDiagram() {
+  const el = document.getElementById('diagram');
+  el.innerHTML = '';
+  phases.forEach((ph, pi) => {
+    // Phase label
+    const lbl = document.createElement('div');
+    lbl.className = 'phase-label';
+    lbl.innerHTML = `<span class="pnum">${ph.num}</span> Phase ${ph.num}: ${ph.label} <span class="ptool">— ${ph.tool}</span>`;
+    const phDiv = document.createElement('div');
+    phDiv.className = 'phase';
+    phDiv.appendChild(lbl);
+
+    ph.rows.forEach((row, ri) => {
+      if (ri > 0) {
+        const a = document.createElement('div');
+        a.className = 'arrow';
+        a.innerHTML = arrowSvg;
+        phDiv.appendChild(a);
+      }
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'row';
+      row.forEach(id => {
+        const node = N[id];
+        if (!node) return;
+        const d = document.createElement('div');
+        d.className = `nd t-${node.tool} ${node.shape ? 'shape-'+node.shape : ''}`;
+        d.dataset.id = id;
+        d.dataset.tool = node.tool;
+        d.onclick = () => showDetail(id);
+        d.innerHTML = `
+          <div class="nd-name">${node.name}</div>
+          <div class="nd-type">${node.type}</div>
+          <span class="nd-badge ${badgeClass(node.tool)}">${node.badge}</span>
+        `;
+        rowDiv.appendChild(d);
+      });
+      phDiv.appendChild(rowDiv);
+    });
+
+    el.appendChild(phDiv);
+
+    // Arrow between phases
+    if (pi < phases.length - 1) {
+      const a = document.createElement('div');
+      a.className = 'arrow';
+      a.innerHTML = arrowSvg;
+      el.appendChild(a);
+    }
+  });
+}
+
+// ── Detail Panel ──────────────────────────────────────────
+const ov = document.getElementById('ov');
+const pn = document.getElementById('pn');
+
+function showDetail(id) {
+  const nd = N[id]; if (!nd) return;
+  pn.innerHTML = `
+    <div class="p-head">
+      <div><h2>${nd.name}</h2><span class="nd-badge ${badgeClass(nd.tool)}" style="margin-top:4px">${nd.badge}</span></div>
+      <button class="p-close" onclick="closeDetail()">&times;</button>
+    </div>
+    <div class="p-body">
+      <div class="p-sec"><div class="p-label">Resource Type</div><div class="p-val"><code>${nd.type}</code></div></div>
+      <div class="p-sec"><div class="p-label">Description</div><div class="p-val">${nd.desc}</div></div>
+      <div class="p-sec"><div class="p-label">Configuration</div><div class="p-config">${nd.config}</div></div>
+      ${nd.up.length ? `<div class="p-sec"><div class="p-label">Depends On (create first)</div><div class="p-deps">${nd.up.map(u=>`<span class="dep up" onclick="event.stopPropagation();showDetail('${u}')">${N[u]?N[u].name:u}</span>`).join('')}</div></div>` : ''}
+      ${nd.down.length ? `<div class="p-sec"><div class="p-label">Feeds Into</div><div class="p-deps">${nd.down.map(d=>`<span class="dep down" onclick="event.stopPropagation();showDetail('${d}')">${N[d]?N[d].name:d}</span>`).join('')}</div></div>` : ''}
+    </div>`;
+  ov.classList.add('open');
+}
+function closeDetail() { ov.classList.remove('open'); }
+ov.addEventListener('click', e => { if (e.target===ov) closeDetail(); });
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeDetail(); });
+
+// ── Search ────────────────────────────────────────────────
+document.getElementById('search').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.nd').forEach(el => {
+    const nd = N[el.dataset.id];
+    if (!nd) return;
+    const txt = `${nd.name} ${nd.type} ${nd.desc} ${nd.tool} ${nd.config}`.toLowerCase();
+    el.classList.toggle('dim', q && !txt.includes(q));
+    el.classList.toggle('hl', q && txt.includes(q));
+  });
+});
+
+// ── Filter ────────────────────────────────────────────────
+document.querySelectorAll('.tbtn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+    const f = this.dataset.f;
+    document.querySelectorAll('.nd').forEach(el => {
+      el.classList.toggle('dim', f!=='all' && el.dataset.tool!==f);
+      el.classList.remove('hl');
+    });
+  });
+});
+
+renderDiagram();
+</script>
+</body>
+</html>
